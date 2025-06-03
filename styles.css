@@ -203,8 +203,8 @@ body:has(.dark-mode-toggle:checked) .toggle-btn {
   margin-bottom: clamp(0.5rem, 2vw, 1rem);
   background: linear-gradient(135deg, #1f2937, #3b82f6);
   -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
   background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
 
 body:has(.dark-mode-toggle:checked) .hero-content h2 {
