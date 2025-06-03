@@ -230,37 +230,229 @@ body:has(.dark-mode-toggle:checked) .hero-content h2 {
 }
 
 /* Google Login Button */
-.google-login-btn {
+.button {
+  padding: 10px;
+  font-weight: bold;
   display: flex;
+  position: relative;
+  overflow: hidden;
+  border-radius: 35px;
   align-items: center;
-  justify-content: center;
-  gap: clamp(0.5rem, 2vw, 0.75rem);
+  border: solid black 2px;
+  outline: none;
   width: 100%;
-  padding: clamp(0.5rem, 2vw, 0.75rem) clamp(1rem, 3vw, 1.5rem);
-  background: linear-gradient(135deg, #3b82f6, #6366f1);
-  color: white;
-  text-decoration: none;
-  border-radius: 8px;
-  font-weight: 500;
-  font-size: clamp(0.875rem, 3vw, 1.125rem);
-  transition: all 0.3s ease;
-  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+  justify-content: center;
+  gap: 10px;
+  cursor: pointer;
+  background: white;
 }
 
-.google-login-btn:hover {
-  background: linear-gradient(135deg, #2563eb, #4f46e5);
-  transform: translateY(-1px);
-  box-shadow: 0 6px 16px rgba(59, 130, 246, 0.4);
+.svg {
+  height: 25px;
+  margin-right: 10px;
 }
 
-.google-login-btn:focus {
-  outline: 2px solid #3b82f6;
-  outline-offset: 2px;
+.button .text {
+  z-index: 10;
+  font-size: 14px;
 }
 
+.button:hover .text {
+  animation: text forwards 0.3s;
+}
+
+@keyframes text {
+  from {
+    color: black;
+  }
+
+  to {
+    color: white;
+  }
+}
+
+.svg {
+  z-index: 6;
+}
+
+.button:hover::before {
+  content: "";
+  display: block;
+  position: absolute;
+  top: 50%;
+  left: 9%;
+  transform: translate(-50%, -50%);
+  width: 0;
+  height: 0;
+  opacity: 0;
+  border-radius: 300px;
+  animation: wave1 2.5s ease-in-out forwards;
+}
+
+.button:hover::after {
+  content: "";
+  display: block;
+  position: absolute;
+  top: 50%;
+  left: 9%;
+  transform: translate(-50%, -50%);
+  width: 0;
+  height: 0;
+  opacity: 0;
+  border-radius: 300px;
+  animation: wave2 2.5s ease-in-out forwards;
+}
+
+@keyframes wave1 {
+  0% {
+    z-index: 1;
+    background: #eb4335;
+    width: 0;
+    height: 0;
+    opacity: 1;
+  }
+
+  1% {
+    z-index: 1;
+    background: #eb4335;
+    width: 0;
+    height: 0;
+    opacity: 1;
+  }
+
+  25% {
+    z-index: 1;
+    background: #eb4335;
+    width: 800px;
+    height: 800px;
+    opacity: 1;
+  }
+
+  26% {
+    z-index: 3;
+    background: #34a853;
+    width: 0;
+    height: 0;
+    opacity: 1;
+  }
+
+  50% {
+    z-index: 3;
+    background: #34a853;
+    width: 800px;
+    height: 800px;
+    opacity: 1;
+  }
+
+  70% {
+    z-index: 3;
+    background: #34a853;
+    width: 800px;
+    height: 800px;
+    opacity: 1;
+  }
+
+  100% {
+    z-index: 3;
+    background: #34a853;
+    width: 800px;
+    height: 800px;
+    opacity: 1;
+  }
+}
+
+@keyframes wave2 {
+  0% {
+    z-index: 2;
+    background: #fbbc05;
+    width: 0;
+    height: 0;
+    opacity: 1;
+  }
+
+  11% {
+    z-index: 2;
+    background: #fbbc05;
+    width: 0;
+    height: 0;
+    opacity: 1;
+  }
+
+  35% {
+    z-index: 2;
+    background: #fbbc05;
+    width: 800px;
+    height: 800px;
+    opacity: 1;
+  }
+
+  39% {
+    z-index: 2;
+    background: #fbbc05;
+    width: 800px;
+    height: 800px;
+    opacity: 1;
+  }
+
+  40% {
+    z-index: 4;
+    background: #4285f4;
+    width: 0;
+    height: 0;
+    opacity: 1;
+  }
+
+  64% {
+    z-index: 4;
+    background: #4285f4;
+    width: 800px;
+    height: 800px;
+    opacity: 1;
+  }
+
+  100% {
+    z-index: 4;
+    background: #4285f4;
+    width: 800px;
+    height: 800px;
+    opacity: 1;
+  }
+}
+
+.button:hover .red {
+  animation: disappear 0.1s forwards;
+  animation-delay: 0.1s;
+}
+
+.button:hover .yellow {
+  animation: disappear 0.1s forwards;
+  animation-delay: 0.3s;
+}
+
+.button:hover .green {
+  animation: disappear 0.1s forwards;
+  animation-delay: 0.7s;
+}
+
+.button:hover .blue {
+  animation: disappear 0.1s forwards;
+  animation-delay: 1.1s;
+}
+
+@keyframes disappear {
+  from {
+    filter: brightness(1);
+  }
+
+  to {
+    filter: brightness(100);
+  }
+}
+
+/* Remove old Google login button styles */
+.google-login-btn,
 .google-icon {
-  width: clamp(16px, 5vw, 20px);
-  height: clamp(16px, 5vw, 20px);
+  display: none;
 }
 
 .login-note {
