@@ -11,9 +11,18 @@
     />
   </head>
   <body>
+    <!-- Template for Modal -->
+    <template id="modal-template">
+      <div class="modal">
+        <div class="modal-content classic-card">
+          <span class="modal-close">×</span>
+          <div class="modal-body"></div>
+        </div>
+      </div>
+    </template>
+
     <!-- Landing Page -->
     <div id="landing-page" class="page active">
-      <!-- Header -->
       <header class="header">
         <div class="container">
           <div class="header-content">
@@ -37,7 +46,6 @@
         </div>
       </header>
 
-      <!-- Hero Section -->
       <main class="hero-section">
         <div class="container">
           <div class="hero-content">
@@ -50,14 +58,14 @@
 
             <div class="login-card glass-card">
               <div class="card-header">
-                <h3>Student Login</h3>
+                <h3>Login</h3>
                 <p>Sign in with your SSN Google account to get started</p>
               </div>
               <div class="card-content">
                 <a
                   href="#dashboard"
                   class="google-login-btn"
-                  onclick="showDashboard()"
+                  onclick="handleLogin()"
                 >
                   <svg class="google-icon" viewBox="0 0 24 24">
                     <path
@@ -79,12 +87,13 @@
                   </svg>
                   Continue with Google
                 </a>
-                <p class="login-note">Only @ssn.edu.in accounts are allowed</p>
+                <p class="login-note">
+                  Only @ssn.edu.in or @ssn.admin.edu.in accounts are allowed
+                </p>
               </div>
             </div>
           </div>
 
-          <!-- Features -->
           <div class="features-grid">
             <div class="feature-card glass-card">
               <div class="feature-icon">👥</div>
@@ -114,9 +123,8 @@
       </main>
     </div>
 
-    <!-- Dashboard Page -->
+    <!-- Student Dashboard Page -->
     <div id="dashboard-page" class="page">
-      <!-- Header -->
       <header class="header">
         <div class="container">
           <div class="header-content">
@@ -150,7 +158,6 @@
           </div>
 
           <div class="dashboard-grid">
-            <!-- Profile Card -->
             <div class="dashboard-card glass-card">
               <div class="card-header">
                 <h3>👤 Your Profile</h3>
@@ -170,7 +177,6 @@
               </div>
             </div>
 
-            <!-- Matches Card -->
             <div class="dashboard-card glass-card">
               <div class="card-header">
                 <h3>👥 Roommate Matches</h3>
@@ -185,32 +191,26 @@
               </div>
             </div>
 
-            <!-- Stats Card -->
             <div class="dashboard-card glass-card">
               <div class="card-header">
-                <h3>⏰ Quick Stats</h3>
-                <p>Your roommate search status</p>
+                <h3>📩 Messages</h3>
+                <p>Stay updated with notifications and requests</p>
               </div>
               <div class="card-content">
-                <div class="stats-grid">
-                  <div class="stat-item">
-                    <span>Profile:</span>
-                    <span>0% Complete</span>
+                <div class="message-list">
+                  <div class="message-item">
+                    <span>Arjun Kumar sent a connection request</span>
+                    <button class="btn secondary small">Respond</button>
                   </div>
-                  <div class="stat-item">
-                    <span>Matches:</span>
-                    <span>0 Found</span>
-                  </div>
-                  <div class="stat-item">
-                    <span>Status:</span>
-                    <span class="badge outline">Pending</span>
+                  <div class="message-item">
+                    <span>Profile completion reminder</span>
+                    <button class="btn secondary small">View</button>
                   </div>
                 </div>
               </div>
             </div>
           </div>
 
-          <!-- Matches Section (Hidden by default) -->
           <div class="matches-section" style="display: none">
             <h3>Your Roommate Matches</h3>
             <div class="matches-grid">
@@ -246,7 +246,6 @@
 
     <!-- Preferences Form Page -->
     <div id="preferences-page" class="page">
-      <!-- Header -->
       <header class="header">
         <div class="container">
           <div class="header-content">
@@ -281,11 +280,15 @@
             </div>
             <div class="card-content">
               <form class="form">
-                <!-- Sleep Schedule -->
                 <div class="form-row">
                   <div class="form-group">
-                    <label>Sleep Time *</label>
-                    <select class="form-select">
+                    <label for="sleep-time">Sleep Time *</label>
+                    <select
+                      id="sleep-time"
+                      class="form-select"
+                      required
+                      aria-required="true"
+                    >
                       <option value="">Select sleep time</option>
                       <option value="9:00 PM">9:00 PM</option>
                       <option value="10:00 PM">10:00 PM</option>
@@ -296,8 +299,13 @@
                     </select>
                   </div>
                   <div class="form-group">
-                    <label>Wake Time *</label>
-                    <select class="form-select">
+                    <label for="wake-time">Wake Time *</label>
+                    <select
+                      id="wake-time"
+                      class="form-select"
+                      required
+                      aria-required="true"
+                    >
                       <option value="">Select wake time</option>
                       <option value="5:00 AM">5:00 AM</option>
                       <option value="6:00 AM">6:00 AM</option>
@@ -309,11 +317,15 @@
                   </div>
                 </div>
 
-                <!-- Academic Info -->
                 <div class="form-row">
                   <div class="form-group">
-                    <label>Department *</label>
-                    <select class="form-select">
+                    <label for="department">Department *</label>
+                    <select
+                      id="department"
+                      class="form-select"
+                      required
+                      aria-required="true"
+                    >
                       <option value="">Select department</option>
                       <option value="CSE">
                         Computer Science & Engineering
@@ -327,8 +339,13 @@
                     </select>
                   </div>
                   <div class="form-group">
-                    <label>Year of Study *</label>
-                    <select class="form-select">
+                    <label for="year">Year of Study *</label>
+                    <select
+                      id="year"
+                      class="form-select"
+                      required
+                      aria-required="true"
+                    >
                       <option value="">Select year</option>
                       <option value="1">1st Year</option>
                       <option value="2">2nd Year</option>
@@ -338,30 +355,39 @@
                   </div>
                 </div>
 
-                <!-- Contact Information -->
                 <div class="form-row">
                   <div class="form-group">
-                    <label>Phone Number *</label>
+                    <label for="phone">Phone Number *</label>
                     <input
+                      id="phone"
                       type="tel"
                       class="form-input"
                       placeholder="Enter your phone number"
+                      required
+                      aria-required="true"
                     />
                   </div>
                   <div class="form-group">
-                    <label>Student ID *</label>
+                    <label for="student-id">Student ID *</label>
                     <input
+                      id="student-id"
                       type="text"
                       class="form-input"
                       placeholder="Enter your student ID"
+                      required
+                      aria-required="true"
                     />
                   </div>
                 </div>
 
-                <!-- Study Preferences -->
                 <div class="form-group">
-                  <label>Preferred Study Time *</label>
-                  <select class="form-select">
+                  <label for="study-time">Preferred Study Time *</label>
+                  <select
+                    id="study-time"
+                    class="form-select"
+                    required
+                    aria-required="true"
+                  >
                     <option value="">Select study time preference</option>
                     <option value="early-morning">
                       Early Morning (5 AM - 8 AM)
@@ -376,10 +402,14 @@
                   </select>
                 </div>
 
-                <!-- Room Preferences -->
                 <div class="form-group">
-                  <label>Room Type Preference *</label>
-                  <select class="form-select">
+                  <label for="room-type">Room Type Preference *</label>
+                  <select
+                    id="room-type"
+                    class="form-select"
+                    required
+                    aria-required="true"
+                  >
                     <option value="">Select room type</option>
                     <option value="single">Single Room</option>
                     <option value="double">Double Sharing</option>
@@ -388,29 +418,36 @@
                   </select>
                 </div>
 
-                <!-- Personal Details -->
                 <div class="form-group">
-                  <label>Home Address *</label>
+                  <label for="address">Home Address *</label>
                   <textarea
+                    id="address"
                     class="form-textarea"
                     placeholder="Enter your home address"
                     rows="3"
+                    required
+                    aria-required="true"
                   ></textarea>
                 </div>
 
                 <div class="form-group">
-                  <label>Emergency Contact *</label>
+                  <label for="emergency-contact">Emergency Contact *</label>
                   <input
+                    id="emergency-contact"
                     type="text"
                     class="form-input"
                     placeholder="Enter emergency contact name and number"
+                    required
+                    aria-required="true"
                   />
                 </div>
 
-                <!-- Lifestyle Preferences -->
                 <div class="form-group">
-                  <label>Preferred Roommates (Optional)</label>
+                  <label for="preferred-roommates"
+                    >Preferred Roommates (Optional)</label
+                  >
                   <textarea
+                    id="preferred-roommates"
                     class="form-textarea"
                     placeholder="Enter names or student IDs of preferred roommates (if any)"
                     rows="2"
@@ -418,8 +455,13 @@
                 </div>
 
                 <div class="form-group">
-                  <label>Study Habits *</label>
-                  <select class="form-select">
+                  <label for="study-habits">Study Habits *</label>
+                  <select
+                    id="study-habits"
+                    class="form-select"
+                    required
+                    aria-required="true"
+                  >
                     <option value="">Select study habits</option>
                     <option value="silent">Silent Study</option>
                     <option value="music">Study with Music</option>
@@ -430,8 +472,13 @@
 
                 <div class="form-row">
                   <div class="form-group">
-                    <label>Cleanliness Level *</label>
-                    <select class="form-select">
+                    <label for="cleanliness">Cleanliness Level *</label>
+                    <select
+                      id="cleanliness"
+                      class="form-select"
+                      required
+                      aria-required="true"
+                    >
                       <option value="">Select cleanliness level</option>
                       <option value="very-clean">Very Clean</option>
                       <option value="moderately-clean">Moderately Clean</option>
@@ -439,8 +486,13 @@
                     </select>
                   </div>
                   <div class="form-group">
-                    <label>Guest Policy *</label>
-                    <select class="form-select">
+                    <label for="guest-policy">Guest Policy *</label>
+                    <select
+                      id="guest-policy"
+                      class="form-select"
+                      required
+                      aria-required="true"
+                    >
                       <option value="">Select guest policy</option>
                       <option value="no-guests">No Guests</option>
                       <option value="occasional">Occasional Guests</option>
@@ -450,8 +502,9 @@
                 </div>
 
                 <div class="form-group">
-                  <label>Hobbies & Interests</label>
+                  <label for="hobbies">Hobbies & Interests</label>
                   <textarea
+                    id="hobbies"
                     class="form-textarea"
                     placeholder="Tell us about your hobbies and interests"
                     rows="3"
@@ -468,8 +521,198 @@
       </main>
     </div>
 
+    <!-- Admin Dashboard Page -->
+    <div id="admin-dashboard-page" class="page">
+      <header class="header">
+        <div class="container">
+          <div class="header-content">
+            <div class="logo-section">
+              <img src="src/ssn_logo.png" alt="SSN Logo" class="logo" />
+              <h1>Admin Dashboard</h1>
+            </div>
+            <div class="header-actions">
+              <input
+                type="checkbox"
+                id="admin-dark-toggle"
+                class="dark-mode-toggle"
+              />
+              <label for="admin-dark-toggle" class="toggle-btn">
+                <span class="sun-icon">☀️</span>
+                <span class="moon-icon">🌙</span>
+              </label>
+              <a href="#landing" class="logout-btn" onclick="showLanding()"
+                >Logout</a
+              >
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <main class="admin-main">
+        <div class="container">
+          <div class="dashboard-header">
+            <h2>Welcome, Admin!</h2>
+            <p>Manage student categories, room types, and room allotments.</p>
+          </div>
+
+          <div class="admin-grid">
+            <!-- Manage Categories -->
+            <div class="dashboard-card glass-card">
+              <div class="card-header">
+                <h3>👥 Manage Categories</h3>
+                <p>Add, remove, or edit student categories</p>
+              </div>
+              <div class="card-content">
+                <div class="category-list">
+                  <div class="category-item">
+                    <span>1st Year SSN Students</span>
+                    <div class="category-actions">
+                      <button
+                        class="btn secondary small"
+                        onclick="showEditCategoryModal()"
+                      >
+                        Edit
+                      </button>
+                      <button class="btn secondary small remove">Remove</button>
+                    </div>
+                  </div>
+                  <div class="category-item">
+                    <span>3rd Year SSN Students</span>
+                    <div class="category-actions">
+                      <button
+                        class="btn secondary small"
+                        onclick="showEditCategoryModal()"
+                      >
+                        Edit
+                      </button>
+                      <button class="btn secondary small remove">Remove</button>
+                    </div>
+                  </div>
+                </div>
+                <button class="btn primary" onclick="showAddCategoryModal()">
+                  Add Category
+                </button>
+              </div>
+            </div>
+
+            <!-- Manage Room Types -->
+            <div class="dashboard-card glass-card">
+              <div class="card-header">
+                <h3>🏠 Manage Room Types</h3>
+                <p>Add, remove, or edit room types and access</p>
+              </div>
+              <div class="card-content">
+                <div class="room-type-list">
+                  <div class="room-type-item">
+                    <span>Single Room (Access: 3rd, 4th Year)</span>
+                    <div class="room-type-actions">
+                      <button
+                        class="btn secondary small"
+                        onclick="showEditRoomTypeModal()"
+                      >
+                        Edit
+                      </button>
+                      <button class="btn secondary small remove">Remove</button>
+                    </div>
+                  </div>
+                  <div class="room-type-item">
+                    <span>Double Sharing (Access: All Years)</span>
+                    <div class="room-type-actions">
+                      <button
+                        class="btn secondary small"
+                        onclick="showEditRoomTypeModal()"
+                      >
+                        Edit
+                      </button>
+                      <button class="btn secondary small remove">Remove</button>
+                    </div>
+                  </div>
+                </div>
+                <button class="btn primary" onclick="showAddRoomTypeModal()">
+                  Add Room Type
+                </button>
+              </div>
+            </div>
+
+            <!-- Allot Rooms -->
+            <div class="dashboard-card glass-card">
+              <div class="card-header">
+                <h3>📅 Allot Rooms</h3>
+                <p>Allocate rooms to students by category</p>
+              </div>
+              <div class="card-content">
+                <div class="form-group">
+                  <label for="location">Location</label>
+                  <select
+                    id="location"
+                    class="form-select"
+                    onchange="updateCategoryOptions()"
+                  >
+                    <option value="">Select location</option>
+                    <option value="chennai">Chennai Students</option>
+                    <option value="non-chennai">Non-Chennai Students</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label for="category">Category</label>
+                  <select
+                    id="category"
+                    class="form-select"
+                    onchange="showAllotmentForm()"
+                  >
+                    <option value="">Select category</option>
+                  </select>
+                </div>
+                <div id="allotment-form" style="display: none">
+                  <div class="form-group">
+                    <label for="allot-room-type">Room Type</label>
+                    <select id="allot-room-type" class="form-select">
+                      <option value="">Select room type</option>
+                      <option value="single">Single Room</option>
+                      <option value="double">Double Sharing</option>
+                      <option value="triple">Triple Sharing</option>
+                      <option value="quad">Quad Sharing</option>
+                    </select>
+                  </div>
+                  <div class="form-group">
+                    <label for="num-students">Number of Students</label>
+                    <input
+                      id="num-students"
+                      type="number"
+                      class="form-input"
+                      placeholder="Enter number of students"
+                      min="1"
+                    />
+                  </div>
+                  <button class="btn primary" onclick="allotRooms()">
+                    Allot Rooms
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+
     <script>
-      // Minimal JavaScript for page navigation (since you requested HTML/CSS only, this is just for demo)
+      function handleLogin() {
+        // Simulate admin detection based on email domain
+        const isAdmin = prompt(
+          "Enter email (use @ssn.admin.edu.in for admin):"
+        ).endsWith("@ssn.admin.edu.in");
+        document
+          .querySelectorAll(".page")
+          .forEach((page) => page.classList.remove("active"));
+        if (isAdmin) {
+          document
+            .getElementById("admin-dashboard-page")
+            .classList.add("active");
+        } else {
+          document.getElementById("dashboard-page").classList.add("active");
+        }
+      }
+
       function showDashboard() {
         document
           .querySelectorAll(".page")
@@ -489,6 +732,134 @@
           .querySelectorAll(".page")
           .forEach((page) => page.classList.remove("active"));
         document.getElementById("preferences-page").classList.add("active");
+      }
+
+      function showAddCategoryModal() {
+        const modalTemplate = document
+          .getElementById("modal-template")
+          .content.cloneNode(true);
+        modalTemplate.querySelector(".modal-body").innerHTML = `
+          <h3>Add Category</h3>
+          <form class="form">
+            <div class="form-group">
+              <label for="category-name">Category Name</label>
+              <input id="category-name" type="text" class="form-input" placeholder="e.g., 2nd Year SSN Students" />
+            </div>
+            <button type="submit" class="btn primary">Add Category</button>
+          </form>
+        `;
+        document.body.appendChild(modalTemplate);
+        attachModalClose();
+      }
+
+      function showEditCategoryModal() {
+        const modalTemplate = document
+          .getElementById("modal-template")
+          .content.cloneNode(true);
+        modalTemplate.querySelector(".modal-body").innerHTML = `
+          <h3>Edit Category</h3>
+          <form class="form">
+            <div class="form-group">
+              <label for="category-name">Category Name</label>
+              <input id="category-name" type="text" class="form-input" value="1st Year SSN Students" />
+            </div>
+            <button type="submit" class="btn primary">Save Changes</button>
+          </form>
+        `;
+        document.body.appendChild(modalTemplate);
+        attachModalClose();
+      }
+
+      function showAddRoomTypeModal() {
+        const modalTemplate = document
+          .getElementById("modal-template")
+          .content.cloneNode(true);
+        modalTemplate.querySelector(".modal-body").innerHTML = `
+          <h3>Add Room Type</h3>
+          <form class="form">
+            <div class="form-group">
+              <label for="room-type-name">Room Type Name</label>
+              <input id="room-type-name" type="text" class="form-input" placeholder="e.g., Triple Sharing" />
+            </div>
+            <div class="form-group">
+              <label for="allowed-categories">Allowed Categories</label>
+              <select id="allowed-categories" class="form-select" multiple>
+                <option value="1st-year">1st Year SSN Students</option>
+                <option value="3rd-year">3rd Year SSN Students</option>
+              </select>
+            </div>
+            <button type="submit" class="btn primary">Add Room Type</button>
+          </form>
+        `;
+        document.body.appendChild(modalTemplate);
+        attachModalClose();
+      }
+
+      function showEditRoomTypeModal() {
+        const modalTemplate = document
+          .getElementById("modal-template")
+          .content.cloneNode(true);
+        modalTemplate.querySelector(".modal-body").innerHTML = `
+          <h3>Edit Room Type</h3>
+          <form class="form">
+            <div class="form-group">
+              <label for="room-type-name">Room Type Name</label>
+              <input id="room-type-name" type="text" class="form-input" value="Single Room" />
+            </div>
+            <div class="form-group">
+              <label for="allowed-categories">Allowed Categories</label>
+              <select id="allowed-categories" class="form-select" multiple>
+                <option value="1st-year">1st Year SSN Students</option>
+                <option value="3rd-year" selected>3rd Year SSN Students</option>
+              </select>
+            </div>
+            <button type="submit" class="btn primary">Save Changes</button>
+          </form>
+        `;
+        document.body.appendChild(modalTemplate);
+        attachModalClose();
+      }
+
+      function updateCategoryOptions() {
+        const location = document.getElementById("location").value;
+        const categorySelect = document.getElementById("category");
+        categorySelect.innerHTML = '<option value="">Select category</option>';
+        if (location === "chennai") {
+          categorySelect.innerHTML += `
+            <option value="1st-year-chennai">1st Year SSN Students (Chennai)</option>
+            <option value="3rd-year-chennai">3rd Year SSN Students (Chennai)</option>
+          `;
+        } else if (location === "non-chennai") {
+          categorySelect.innerHTML += `
+            <option value="1st-year-non-chennai">1st Year SSN Students (Non-Chennai)</option>
+            <option value="3rd-year-non-chennai">3rd Year SSN Students (Non-Chennai)</option>
+          `;
+        }
+      }
+
+      function showAllotmentForm() {
+        document.getElementById("allotment-form").style.display = "block";
+      }
+
+      function allotRooms() {
+        const category = document.getElementById("category").value;
+        const roomType = document.getElementById("allot-room-type").value;
+        const numStudents = document.getElementById("num-students").value;
+        if (category && roomType && numStudents) {
+          alert(
+            `Allocated ${numStudents} students from ${category} to ${roomType}`
+          );
+        } else {
+          alert("Please fill all fields.");
+        }
+      }
+
+      function attachModalClose() {
+        const closeBtn = document.querySelector(".modal-close");
+        closeBtn.addEventListener("click", () => {
+          const modal = closeBtn.closest(".modal");
+          modal.remove();
+        });
       }
     </script>
   </body>
