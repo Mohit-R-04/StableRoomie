@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Roommate Harmony - SSN College</title>
+    <link rel="stylesheet" href="styles.css" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <!-- Landing Page -->
+    <div id="landing-page" class="page active">
+      <!-- Header -->
+      <header class="header">
+        <div class="container">
+          <div class="header-content">
+            <div class="logo-section">
+              <img src="src/ssn_logo.png" alt="SSN Logo" class="logo" />
+              <div class="logo-text">
+                <h1>Roommate Harmony</h1>
+                <p>Sri Sivasubramaniya Nadar College of Engineering</p>
+              </div>
+            </div>
+            <input
+              type="checkbox"
+              id="dark-mode-toggle"
+              class="dark-mode-toggle"
+            />
+            <label for="dark-mode-toggle" class="toggle-btn">
+              <span class="sun-icon">☀️</span>
+              <span class="moon-icon">🌙</span>
+            </label>
+          </div>
+        </div>
+      </header>
+
+      <!-- Hero Section -->
+      <main class="hero-section">
+        <div class="container">
+          <div class="hero-content">
+            <h2>Find Your Perfect Roommate</h2>
+            <p>
+              Our intelligent matching algorithm helps SSN students find
+              compatible roommates based on detailed preferences and lifestyle
+              choices.
+            </p>
+
+            <div class="login-card glass-card">
+              <div class="card-header">
+                <h3>Student Login</h3>
+                <p>Sign in with your SSN Google account to get started</p>
+              </div>
+              <div class="card-content">
+                <a
+                  href="#dashboard"
+                  class="google-login-btn"
+                  onclick="showDashboard()"
+                >
+                  <svg class="google-icon" viewBox="0 0 24 24">
+                    <path
+                      fill="currentColor"
+                      d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+                    />
+                    <path
+                      fill="currentColor"
+                      d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+                    />
+                    <path
+                      fill="currentColor"
+                      d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
+                    />
+                    <path
+                      fill="currentColor"
+                      d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
+                    />
+                  </svg>
+                  Continue with Google
+                </a>
+                <p class="login-note">Only @ssn.edu.in accounts are allowed</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Features -->
+          <div class="features-grid">
+            <div class="feature-card glass-card">
+              <div class="feature-icon">👥</div>
+              <h3>Smart Matching</h3>
+              <p>
+                Advanced algorithm matches you with compatible roommates based
+                on your preferences
+              </p>
+            </div>
+            <div class="feature-card glass-card">
+              <div class="feature-icon">⏰</div>
+              <h3>Lifestyle Compatibility</h3>
+              <p>
+                Match based on sleep schedules, study habits, and daily routines
+              </p>
+            </div>
+            <div class="feature-card glass-card">
+              <div class="feature-icon">📚</div>
+              <h3>Department Preferences</h3>
+              <p>
+                Find roommates from your department or explore cross-department
+                matches
+              </p>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+
+    <!-- Dashboard Page -->
+    <div id="dashboard-page" class="page">
+      <!-- Header -->
+      <header class="header">
+        <div class="container">
+          <div class="header-content">
+            <div class="logo-section">
+              <img src="src/ssn_logo.png" alt="SSN Logo" class="logo" />
+              <h1>Roommate Harmony</h1>
+            </div>
+            <div class="header-actions">
+              <input
+                type="checkbox"
+                id="dashboard-dark-toggle"
+                class="dark-mode-toggle"
+              />
+              <label for="dashboard-dark-toggle" class="toggle-btn">
+                <span class="sun-icon">☀️</span>
+                <span class="moon-icon">🌙</span>
+              </label>
+              <a href="#landing" class="logout-btn" onclick="showLanding()"
+                >Logout</a
+              >
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <main class="dashboard-main">
+        <div class="container">
+          <div class="dashboard-header">
+            <h2>Welcome, Student!</h2>
+            <p>Complete your preferences to find the perfect roommate match.</p>
+          </div>
+
+          <div class="dashboard-grid">
+            <!-- Profile Card -->
+            <div class="dashboard-card glass-card">
+              <div class="card-header">
+                <h3>👤 Your Profile</h3>
+                <p>Complete your profile to get started</p>
+              </div>
+              <div class="card-content">
+                <div class="status-row">
+                  <span>Status:</span>
+                  <span class="badge incomplete">Incomplete</span>
+                </div>
+                <a
+                  href="#preferences"
+                  class="btn primary"
+                  onclick="showPreferences()"
+                  >Complete Profile</a
+                >
+              </div>
+            </div>
+
+            <!-- Matches Card -->
+            <div class="dashboard-card glass-card">
+              <div class="card-header">
+                <h3>👥 Roommate Matches</h3>
+                <p>Complete preferences to see matches</p>
+              </div>
+              <div class="card-content">
+                <div class="status-row">
+                  <span>Matches Found:</span>
+                  <span class="badge">0</span>
+                </div>
+                <button class="btn secondary disabled">View Matches</button>
+              </div>
+            </div>
+
+            <!-- Stats Card -->
+            <div class="dashboard-card glass-card">
+              <div class="card-header">
+                <h3>⏰ Quick Stats</h3>
+                <p>Your roommate search status</p>
+              </div>
+              <div class="card-content">
+                <div class="stats-grid">
+                  <div class="stat-item">
+                    <span>Profile:</span>
+                    <span>0% Complete</span>
+                  </div>
+                  <div class="stat-item">
+                    <span>Matches:</span>
+                    <span>0 Found</span>
+                  </div>
+                  <div class="stat-item">
+                    <span>Status:</span>
+                    <span class="badge outline">Pending</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Matches Section (Hidden by default) -->
+          <div class="matches-section" style="display: none">
+            <h3>Your Roommate Matches</h3>
+            <div class="matches-grid">
+              <div class="match-card glass-card">
+                <div class="match-header">
+                  <h4>Arjun Kumar</h4>
+                  <span class="compatibility-badge">95% Match</span>
+                </div>
+                <p class="match-info">CSE • 2nd Year</p>
+                <div class="match-details">
+                  <div class="detail-item">
+                    <span class="icon">⏰</span>
+                    <span>Sleep: 11:00 PM - Wake: 7:00 AM</span>
+                  </div>
+                  <div class="detail-item">
+                    <span class="icon">👤</span>
+                    <span>Silent Study</span>
+                  </div>
+                </div>
+                <p class="hobbies">
+                  <strong>Hobbies:</strong> Reading, Chess, Coding
+                </p>
+                <div class="match-actions">
+                  <button class="btn primary small">Connect</button>
+                  <button class="btn secondary small">View Profile</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+
+    <!-- Preferences Form Page -->
+    <div id="preferences-page" class="page">
+      <!-- Header -->
+      <header class="header">
+        <div class="container">
+          <div class="header-content">
+            <div class="header-left">
+              <a href="#dashboard" class="back-btn" onclick="showDashboard()"
+                >← Back</a
+              >
+              <h1>Roommate Preferences</h1>
+            </div>
+            <input
+              type="checkbox"
+              id="preferences-dark-toggle"
+              class="dark-mode-toggle"
+            />
+            <label for="preferences-dark-toggle" class="toggle-btn">
+              <span class="sun-icon">☀️</span>
+              <span class="moon-icon">🌙</span>
+            </label>
+          </div>
+        </div>
+      </header>
+
+      <main class="preferences-main">
+        <div class="container">
+          <div class="preferences-form glass-card">
+            <div class="card-header">
+              <h2>Complete Your Profile</h2>
+              <p>
+                Help us find your perfect roommate by filling out these detailed
+                preferences
+              </p>
+            </div>
+            <div class="card-content">
+              <form class="form">
+                <!-- Sleep Schedule -->
+                <div class="form-row">
+                  <div class="form-group">
+                    <label>Sleep Time *</label>
+                    <select class="form-select">
+                      <option value="">Select sleep time</option>
+                      <option value="9:00 PM">9:00 PM</option>
+                      <option value="10:00 PM">10:00 PM</option>
+                      <option value="11:00 PM">11:00 PM</option>
+                      <option value="12:00 AM">12:00 AM</option>
+                      <option value="1:00 AM">1:00 AM</option>
+                      <option value="2:00 AM">2:00 AM</option>
+                    </select>
+                  </div>
+                  <div class="form-group">
+                    <label>Wake Time *</label>
+                    <select class="form-select">
+                      <option value="">Select wake time</option>
+                      <option value="5:00 AM">5:00 AM</option>
+                      <option value="6:00 AM">6:00 AM</option>
+                      <option value="7:00 AM">7:00 AM</option>
+                      <option value="8:00 AM">8:00 AM</option>
+                      <option value="9:00 AM">9:00 AM</option>
+                      <option value="10:00 AM">10:00 AM</option>
+                    </select>
+                  </div>
+                </div>
+
+                <!-- Academic Info -->
+                <div class="form-row">
+                  <div class="form-group">
+                    <label>Department *</label>
+                    <select class="form-select">
+                      <option value="">Select department</option>
+                      <option value="CSE">
+                        Computer Science & Engineering
+                      </option>
+                      <option value="ECE">Electronics & Communication</option>
+                      <option value="EEE">Electrical & Electronics</option>
+                      <option value="MECH">Mechanical Engineering</option>
+                      <option value="CIVIL">Civil Engineering</option>
+                      <option value="IT">Information Technology</option>
+                      <option value="BME">Biomedical Engineering</option>
+                    </select>
+                  </div>
+                  <div class="form-group">
+                    <label>Year of Study *</label>
+                    <select class="form-select">
+                      <option value="">Select year</option>
+                      <option value="1">1st Year</option>
+                      <option value="2">2nd Year</option>
+                      <option value="3">3rd Year</option>
+                      <option value="4">4th Year</option>
+                    </select>
+                  </div>
+                </div>
+
+                <!-- Contact Information -->
+                <div class="form-row">
+                  <div class="form-group">
+                    <label>Phone Number *</label>
+                    <input
+                      type="tel"
+                      class="form-input"
+                      placeholder="Enter your phone number"
+                    />
+                  </div>
+                  <div class="form-group">
+                    <label>Student ID *</label>
+                    <input
+                      type="text"
+                      class="form-input"
+                      placeholder="Enter your student ID"
+                    />
+                  </div>
+                </div>
+
+                <!-- Study Preferences -->
+                <div class="form-group">
+                  <label>Preferred Study Time *</label>
+                  <select class="form-select">
+                    <option value="">Select study time preference</option>
+                    <option value="early-morning">
+                      Early Morning (5 AM - 8 AM)
+                    </option>
+                    <option value="morning">Morning (8 AM - 12 PM)</option>
+                    <option value="afternoon">Afternoon (12 PM - 5 PM)</option>
+                    <option value="evening">Evening (5 PM - 9 PM)</option>
+                    <option value="night">Night (9 PM - 12 AM)</option>
+                    <option value="late-night">
+                      Late Night (12 AM - 3 AM)
+                    </option>
+                  </select>
+                </div>
+
+                <!-- Room Preferences -->
+                <div class="form-group">
+                  <label>Room Type Preference *</label>
+                  <select class="form-select">
+                    <option value="">Select room type</option>
+                    <option value="single">Single Room</option>
+                    <option value="double">Double Sharing</option>
+                    <option value="triple">Triple Sharing</option>
+                    <option value="quad">Quad Sharing</option>
+                  </select>
+                </div>
+
+                <!-- Personal Details -->
+                <div class="form-group">
+                  <label>Home Address *</label>
+                  <textarea
+                    class="form-textarea"
+                    placeholder="Enter your home address"
+                    rows="3"
+                  ></textarea>
+                </div>
+
+                <div class="form-group">
+                  <label>Emergency Contact *</label>
+                  <input
+                    type="text"
+                    class="form-input"
+                    placeholder="Enter emergency contact name and number"
+                  />
+                </div>
+
+                <!-- Lifestyle Preferences -->
+                <div class="form-group">
+                  <label>Preferred Roommates (Optional)</label>
+                  <textarea
+                    class="form-textarea"
+                    placeholder="Enter names or student IDs of preferred roommates (if any)"
+                    rows="2"
+                  ></textarea>
+                </div>
+
+                <div class="form-group">
+                  <label>Study Habits *</label>
+                  <select class="form-select">
+                    <option value="">Select study habits</option>
+                    <option value="silent">Silent Study</option>
+                    <option value="music">Study with Music</option>
+                    <option value="group">Group Study</option>
+                    <option value="discussion">Discussion-based</option>
+                  </select>
+                </div>
+
+                <div class="form-row">
+                  <div class="form-group">
+                    <label>Cleanliness Level *</label>
+                    <select class="form-select">
+                      <option value="">Select cleanliness level</option>
+                      <option value="very-clean">Very Clean</option>
+                      <option value="moderately-clean">Moderately Clean</option>
+                      <option value="casual">Casual</option>
+                    </select>
+                  </div>
+                  <div class="form-group">
+                    <label>Guest Policy *</label>
+                    <select class="form-select">
+                      <option value="">Select guest policy</option>
+                      <option value="no-guests">No Guests</option>
+                      <option value="occasional">Occasional Guests</option>
+                      <option value="frequent">Frequent Guests OK</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label>Hobbies & Interests</label>
+                  <textarea
+                    class="form-textarea"
+                    placeholder="Tell us about your hobbies and interests"
+                    rows="3"
+                  ></textarea>
+                </div>
+
+                <button type="submit" class="btn primary large">
+                  Save Preferences
+                </button>
+              </form>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+
+    <script>
+      // Minimal JavaScript for page navigation (since you requested HTML/CSS only, this is just for demo)
+      function showDashboard() {
+        document
+          .querySelectorAll(".page")
+          .forEach((page) => page.classList.remove("active"));
+        document.getElementById("dashboard-page").classList.add("active");
+      }
+
+      function showLanding() {
+        document
+          .querySelectorAll(".page")
+          .forEach((page) => page.classList.remove("active"));
+        document.getElementById("landing-page").classList.add("active");
+      }
+
+      function showPreferences() {
+        document
+          .querySelectorAll(".page")
+          .forEach((page) => page.classList.remove("active"));
+        document.getElementById("preferences-page").classList.add("active");
+      }
+    </script>
+  </body>
+</html>
