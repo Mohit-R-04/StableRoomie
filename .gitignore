@@ -1,48 +1,100 @@
-# Dependencies
-/node_modules
-/.pnp
-.pnp.js
+# Java / Maven / IntelliJ
+target/
+!.mvn/wrapper/maven-wrapper.jar
+**/logs/
+*.log
+*.tmp
+*.bak
+*.swp
+*.swo
+*.orig
+*.rej
+hs_err_pid*
+replay_pid*
 
-# Testing
-/coverage
+# Eclipse / IntelliJ
+.classpath
+.project
+.settings/
+.idea/
+*.iml
+*.ipr
+*.iws
 
-# Production
-/build
-/dist
-
-# Misc
+# MacOS-specific
 .DS_Store
+.AppleDouble
+.LSOverride
+Icon?
+._*
+.Spotlight-V100
+.Trashes
+*.swp
+*.swo
+
+# Node.js / Frontend / React
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnp/
+.pnp.js
+.yarn-integrity
+dist/
+build/
+coverage/
+*.tgz
+*.tsbuildinfo
+.eslintcache
+
+# Environment files
 .env
 .env.local
 .env.development.local
 .env.test.local
 .env.production.local
 
-# Debug logs
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
+# VS Code
+.vscode/
 
-# IDE specific files
-.idea
-.vscode
+# JetBrains Rider
+.idea/
+.idea/**
+
+# OS generated
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Others
+*.class
+*.war
+*.ear
+*.zip
+*.tar
+*.tar.gz
+*.rar
+*.7z
+
+# Gradle (if present)
+.gradle/
+build/
+
+# Java-specific
+*.class
+*.jar
+*.war
+*.ear
+
+# Misc
+*.log
+*.bak
 *.swp
 *.swo
+*.tmp
+*.orig
+*.rej
 
-# TypeScript
-*.tsbuildinfo
-
-# Optional npm cache directory
-.npm
-
-# Optional eslint cache
-.eslintcache
-
-# Optional REPL history
-.node_repl_history
-
-# Output of 'npm pack'
-*.tgz
-
-# Yarn Integrity file
-.yarn-integrity 
+# IntelliJ IDEA
+*.iws
+out/
