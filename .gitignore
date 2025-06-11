@@ -104,3 +104,5 @@ frontend/dist/
 frontend/node_modules/
 backend/src/main/resources/static/*
 !backend/src/main/resources/static/index.html
+
+venv311
