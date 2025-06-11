@@ -98,3 +98,9 @@ build/
 # IntelliJ IDEA
 *.iws
 out/
+.qodo
+
+frontend/dist/
+frontend/node_modules/
+backend/src/main/resources/static/*
+!backend/src/main/resources/static/index.html
