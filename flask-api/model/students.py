@@ -8,7 +8,7 @@ class Student:
         self.cleanliness = cleanliness    # "High", "Medium", "No Problem"
         self.friend1 = friend1            # friend1's student id
         self.friend2 = friend2            # friend2's student id
-def getStudents():
+def getStudents(filter):
     students = [
         
         Student("S1", 23, 8, "LOW", "HIGH", "MEDIUM", "S4", None),

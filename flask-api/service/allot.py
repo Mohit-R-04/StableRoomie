@@ -176,5 +176,5 @@ def allotment(students):
     elif len(leftover) == 2:
         groups.append([leftover[0].id, leftover[1].id])
 
-
-    return group
+    return groups
+    

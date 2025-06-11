@@ -2,3 +2,5 @@ networkx==3.2.1
 python-louvain==0.16
 scikit-learn==1.4.2
 numpy==1.26.4
+flask==3.1.1
+flask-cors==3.0.10
