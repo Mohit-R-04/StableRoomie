@@ -20,7 +20,8 @@ def allot_roommates():
         return jsonify({"message": "Invalid input: Expecting a dictionary of students"}), 400
     try:
         allotment = allot.allotment(students)
-        return jsonify({"allotment":allotment,"message":"Allotment Successful"})
+        print(allotment)
+        return jsonify({"message":"Allotment Successful"})
     except exception as e:
         return jsonify({"message": str(e)}), 500
 
