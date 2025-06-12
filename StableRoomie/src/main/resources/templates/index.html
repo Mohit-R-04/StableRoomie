@@ -302,10 +302,9 @@
                       required
                       aria-required="true"
                     >
-                      <option value="">Select sleep time</option>
+                      <option value="11:00 PM" selected>11:00 PM</option>
                       <option value="9:00 PM">9:00 PM</option>
                       <option value="10:00 PM">10:00 PM</option>
-                      <option value="11:00 PM">11:00 PM</option>
                       <option value="12:00 AM">12:00 AM</option>
                       <option value="1:00 AM">1:00 AM</option>
                       <option value="2:00 AM">2:00 AM</option>
@@ -319,10 +318,9 @@
                       required
                       aria-required="true"
                     >
-                      <option value="">Select wake time</option>
+                      <option value="7:00 AM" selected>7:00 AM</option>
                       <option value="5:00 AM">5:00 AM</option>
                       <option value="6:00 AM">6:00 AM</option>
-                      <option value="7:00 AM">7:00 AM</option>
                       <option value="8:00 AM">8:00 AM</option>
                       <option value="9:00 AM">9:00 AM</option>
                       <option value="10:00 AM">10:00 AM</option>
@@ -339,10 +337,7 @@
                       required
                       aria-required="true"
                     >
-                      <option value="">Select department</option>
-                      <option value="CSE">
-                        Computer Science & Engineering
-                      </option>
+                      <option value="CSE" selected>Computer Science & Engineering</option>
                       <option value="ECE">Electronics & Communication</option>
                       <option value="EEE">Electrical & Electronics</option>
                       <option value="MECH">Mechanical Engineering</option>
@@ -359,9 +354,8 @@
                       required
                       aria-required="true"
                     >
-                      <option value="">Select year</option>
+                      <option value="2" selected>2nd Year</option>
                       <option value="1">1st Year</option>
-                      <option value="2">2nd Year</option>
                       <option value="3">3rd Year</option>
                       <option value="4">4th Year</option>
                     </select>
@@ -401,17 +395,12 @@
                     required
                     aria-required="true"
                   >
-                    <option value="">Select study time preference</option>
-                    <option value="early-morning">
-                      Early Morning (5 AM - 8 AM)
-                    </option>
+                    <option value="evening" selected>Evening (5 PM - 9 PM)</option>
+                    <option value="early-morning">Early Morning (5 AM - 8 AM)</option>
                     <option value="morning">Morning (8 AM - 12 PM)</option>
                     <option value="afternoon">Afternoon (12 PM - 5 PM)</option>
-                    <option value="evening">Evening (5 PM - 9 PM)</option>
                     <option value="night">Night (9 PM - 12 AM)</option>
-                    <option value="late-night">
-                      Late Night (12 AM - 3 AM)
-                    </option>
+                    <option value="late-night">Late Night (12 AM - 3 AM)</option>
                   </select>
                 </div>
 
@@ -423,9 +412,8 @@
                     required
                     aria-required="true"
                   >
-                    <option value="">Select room type</option>
+                    <option value="double" selected>Double Sharing</option>
                     <option value="single">Single Room</option>
-                    <option value="double">Double Sharing</option>
                     <option value="triple">Triple Sharing</option>
                     <option value="quad">Quad Sharing</option>
                   </select>
@@ -475,8 +463,7 @@
                     required
                     aria-required="true"
                   >
-                    <option value="">Select study habits</option>
-                    <option value="silent">Silent Study</option>
+                    <option value="silent" selected>Silent Study</option>
                     <option value="music">Study with Music</option>
                     <option value="group">Group Study</option>
                     <option value="discussion">Discussion-based</option>
@@ -492,9 +479,9 @@
                       required
                       aria-required="true"
                     >
-                      <option value="">Select cleanliness level</option>
+                    
+                      <option value="moderately-clean" selected>Moderately Clean</option>
                       <option value="very-clean">Very Clean</option>
-                      <option value="moderately-clean">Moderately Clean</option>
                       <option value="casual">Casual</option>
                     </select>
                   </div>
@@ -506,10 +493,39 @@
                       required
                       aria-required="true"
                     >
-                      <option value="">Select guest policy</option>
+                      <option value="occasional" selected>Occasional Guests</option>
                       <option value="no-guests">No Guests</option>
-                      <option value="occasional">Occasional Guests</option>
                       <option value="frequent">Frequent Guests OK</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div class="form-row">
+                  <div class="form-group">
+                    <label for="light-sensitivity">Light Sensitivity *</label>
+                    <select
+                      id="light-sensitivity"
+                      class="form-select"
+                      required
+                      aria-required="true"
+                      placeholder="Select Light Sensitivity"
+                    >
+                      
+                      <option value="no-light">Need complete darkness to sleep</option>
+                      <option value="any-light">Can sleep with any light</option>
+                    </select>
+                  </div>
+                  <div class="form-group">
+                    <label for="noise-level">Preferred Noise Level *</label>
+                    <select
+                      id="noise-level"
+                      class="form-select"
+                      required
+                      aria-required="true"
+                    >
+                      <option value="low" selected>Low background noise okay</option>
+                      <option value="silent">Complete silence needed</option>
+                      <option value="moderate">Moderate noise acceptable</option>
                     </select>
                   </div>
                 </div>
