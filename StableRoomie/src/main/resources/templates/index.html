@@ -337,7 +337,9 @@
                       required
                       aria-required="true"
                     >
-                      <option value="CSE" selected>Computer Science & Engineering</option>
+                      <option value="CSE" selected>
+                        Computer Science & Engineering
+                      </option>
                       <option value="ECE">Electronics & Communication</option>
                       <option value="EEE">Electrical & Electronics</option>
                       <option value="MECH">Mechanical Engineering</option>
@@ -395,12 +397,18 @@
                     required
                     aria-required="true"
                   >
-                    <option value="evening" selected>Evening (5 PM - 9 PM)</option>
-                    <option value="early-morning">Early Morning (5 AM - 8 AM)</option>
+                    <option value="evening" selected>
+                      Evening (5 PM - 9 PM)
+                    </option>
+                    <option value="early-morning">
+                      Early Morning (5 AM - 8 AM)
+                    </option>
                     <option value="morning">Morning (8 AM - 12 PM)</option>
                     <option value="afternoon">Afternoon (12 PM - 5 PM)</option>
                     <option value="night">Night (9 PM - 12 AM)</option>
-                    <option value="late-night">Late Night (12 AM - 3 AM)</option>
+                    <option value="late-night">
+                      Late Night (12 AM - 3 AM)
+                    </option>
                   </select>
                 </div>
 
@@ -479,8 +487,9 @@
                       required
                       aria-required="true"
                     >
-                    
-                      <option value="moderately-clean" selected>Moderately Clean</option>
+                      <option value="moderately-clean" selected>
+                        Moderately Clean
+                      </option>
                       <option value="very-clean">Very Clean</option>
                       <option value="casual">Casual</option>
                     </select>
@@ -493,7 +502,9 @@
                       required
                       aria-required="true"
                     >
-                      <option value="occasional" selected>Occasional Guests</option>
+                      <option value="occasional" selected>
+                        Occasional Guests
+                      </option>
                       <option value="no-guests">No Guests</option>
                       <option value="frequent">Frequent Guests OK</option>
                     </select>
@@ -510,9 +521,12 @@
                       aria-required="true"
                       placeholder="Select Light Sensitivity"
                     >
-                      
-                      <option value="no-light">Need complete darkness to sleep</option>
-                      <option value="any-light">Can sleep with any light</option>
+                      <option value="no-light">
+                        Need complete darkness to sleep
+                      </option>
+                      <option value="any-light">
+                        Can sleep with any light
+                      </option>
                     </select>
                   </div>
                   <div class="form-group">
@@ -523,9 +537,13 @@
                       required
                       aria-required="true"
                     >
-                      <option value="low" selected>Low background noise okay</option>
+                      <option value="low" selected>
+                        Low background noise okay
+                      </option>
                       <option value="silent">Complete silence needed</option>
-                      <option value="moderate">Moderate noise acceptable</option>
+                      <option value="moderate">
+                        Moderate noise acceptable
+                      </option>
                     </select>
                   </div>
                 </div>
@@ -878,13 +896,20 @@
         const category = document.getElementById("category").value;
         const roomType = document.getElementById("allot-room-type").value;
         const numStudents = document.getElementById("num-students").value;
-        if (category && roomType && numStudents) {
-          alert(
-            `Allocated ${numStudents} students from ${category} to ${roomType}`
-          );
-        } else {
-          alert("Please fill all fields.");
-        }
+        fetch("http://127.0.0.1:5000/allot_roommates", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            category: category,
+            roomType: roomType,
+            numStudents: numStudents,
+          }), // send empty or actual data if needed
+        })
+          .then((response) => response.json())
+          .then((data) => window.alert(data.message))
+          .catch((error) => {
+            console.error("Error:", error);
+          });
       }
 
       function attachModalClose() {
