@@ -110,8 +110,8 @@ body:has(.dark-mode-toggle:checked) .header {
 }
 
 .logo {
-  width: clamp(30px, 8vw, 40px);
-  height: clamp(30px, 8vw, 40px);
+  width: clamp(30px, 8vw, 80px);
+  height: clamp(30px, 8vw, 80px);
   border-radius: 8px;
   object-fit: contain;
 }
@@ -863,6 +863,7 @@ body:has(.dark-mode-toggle:checked) .compatibility-badge {
   font-family: inherit;
   font-size: clamp(0.7rem, 2.5vw, 0.875rem);
   transition: all 0.3s ease;
+  margin: 1.5rem 0;
 }
 
 .form-input:focus,
