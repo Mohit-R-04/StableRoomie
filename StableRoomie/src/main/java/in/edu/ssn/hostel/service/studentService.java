@@ -15,6 +15,6 @@ public class studentService {
         repo.save(stud);
     }
     public Student getStudent(Integer studId){
-        return repo.findById(studId).orElse(new Student(100, "None", 0));
+        return repo.findById(studId).orElse(null);
     }
 }

@@ -294,11 +294,22 @@
             <div class="card-content">
               <form class="form">
                 <div class="form-row">
+                   <div class="form-group">
+                  <label for="student-name">Name *</label>
+                  <input
+                    id="student-name"
+                    type="text"
+                    class="form-input js-name"
+                    placeholder="Enter your name"
+                    required
+                    aria-required="true"
+                  />
+                </div>
                   <div class="form-group">
                     <label for="sleep-time">Sleep Time *</label>
                     <select
                       id="sleep-time"
-                      class="form-select"
+                      class="form-select js-sleep"
                       required
                       aria-required="true"
                     >
@@ -314,7 +325,7 @@
                     <label for="wake-time">Wake Time *</label>
                     <select
                       id="wake-time"
-                      class="form-select"
+                      class="form-select js-wake"
                       required
                       aria-required="true"
                     >
@@ -326,6 +337,23 @@
                       <option value="10:00 AM">10:00 AM</option>
                     </select>
                   </div>
+                  <div class="form-group">
+                    <label for="noise-level">Preferred Noise Level *</label>
+                    <select
+                      id="noise-level"
+                      class="form-select js-noise"
+                      required
+                      aria-required="true"
+                    >
+                      <option value="low" selected>
+                        Low background noise okay
+                      </option>
+                      <option value="silent">Complete silence needed</option>
+                      <option value="moderate">
+                        Moderate noise acceptable
+                      </option>
+                    </select>
+                  </div>
                 </div>
 
                 <div class="form-row">
@@ -333,7 +361,7 @@
                     <label for="department">Department *</label>
                     <select
                       id="department"
-                      class="form-select"
+                      class="form-select js-department"
                       required
                       aria-required="true"
                     >
@@ -352,7 +380,7 @@
                     <label for="year">Year of Study *</label>
                     <select
                       id="year"
-                      class="form-select"
+                      class="form-select js-year"
                       required
                       aria-required="true"
                     >
@@ -370,7 +398,7 @@
                     <input
                       id="phone"
                       type="tel"
-                      class="form-input"
+                      class="form-input js-phone"
                       placeholder="Enter your phone number"
                       required
                       aria-required="true"
@@ -381,7 +409,7 @@
                     <input
                       id="student-id"
                       type="text"
-                      class="form-input"
+                      class="form-input js-studentId"
                       placeholder="Enter your student ID"
                       required
                       aria-required="true"
@@ -393,7 +421,7 @@
                   <label for="study-time">Preferred Study Time *</label>
                   <select
                     id="study-time"
-                    class="form-select"
+                    class="form-select js-study"
                     required
                     aria-required="true"
                   >
@@ -416,7 +444,7 @@
                   <label for="room-type">Room Type Preference *</label>
                   <select
                     id="room-type"
-                    class="form-select"
+                    class="form-select js-room"
                     required
                     aria-required="true"
                   >
@@ -431,7 +459,7 @@
                   <label for="address">Home Address *</label>
                   <textarea
                     id="address"
-                    class="form-textarea"
+                    class="form-textarea js-home"
                     placeholder="Enter your home address"
                     rows="3"
                     required
@@ -444,7 +472,7 @@
                   <input
                     id="emergency-contact"
                     type="text"
-                    class="form-input"
+                    class="form-input js-emergency"
                     placeholder="Enter emergency contact name and number"
                     required
                     aria-required="true"
@@ -457,7 +485,7 @@
                   >
                   <textarea
                     id="preferred-roommates"
-                    class="form-textarea"
+                    class="form-textarea js-friends"
                     placeholder="Enter names or student IDs of preferred roommates (if any)"
                     rows="2"
                   ></textarea>
@@ -467,7 +495,7 @@
                   <label for="study-habits">Study Habits *</label>
                   <select
                     id="study-habits"
-                    class="form-select"
+                    class="form-select js-studyHabbits"
                     required
                     aria-required="true"
                   >
@@ -483,7 +511,7 @@
                     <label for="cleanliness">Cleanliness Level *</label>
                     <select
                       id="cleanliness"
-                      class="form-select"
+                      class="form-select js-clean"
                       required
                       aria-required="true"
                     >
@@ -494,29 +522,14 @@
                       <option value="casual">Casual</option>
                     </select>
                   </div>
-                  <div class="form-group">
-                    <label for="guest-policy">Guest Policy *</label>
-                    <select
-                      id="guest-policy"
-                      class="form-select"
-                      required
-                      aria-required="true"
-                    >
-                      <option value="occasional" selected>
-                        Occasional Guests
-                      </option>
-                      <option value="no-guests">No Guests</option>
-                      <option value="frequent">Frequent Guests OK</option>
-                    </select>
-                  </div>
-                </div>
+                  
 
                 <div class="form-row">
                   <div class="form-group">
                     <label for="light-sensitivity">Light Sensitivity *</label>
                     <select
                       id="light-sensitivity"
-                      class="form-select"
+                      class="form-select js-light"
                       required
                       aria-required="true"
                       placeholder="Select Light Sensitivity"
@@ -528,37 +541,11 @@
                         Can sleep with any light
                       </option>
                     </select>
-                  </div>
-                  <div class="form-group">
-                    <label for="noise-level">Preferred Noise Level *</label>
-                    <select
-                      id="noise-level"
-                      class="form-select"
-                      required
-                      aria-required="true"
-                    >
-                      <option value="low" selected>
-                        Low background noise okay
-                      </option>
-                      <option value="silent">Complete silence needed</option>
-                      <option value="moderate">
-                        Moderate noise acceptable
-                      </option>
-                    </select>
-                  </div>
+                  </div> 
                 </div>
 
-                <div class="form-group">
-                  <label for="hobbies">Hobbies & Interests</label>
-                  <textarea
-                    id="hobbies"
-                    class="form-textarea"
-                    placeholder="Tell us about your hobbies and interests"
-                    rows="3"
-                  ></textarea>
-                </div>
-
-                <button type="submit" class="btn primary large">
+                
+                <button type="submit" class="btn primary large js-submitIt">
                   Save Preferences
                 </button>
               </form>
@@ -745,8 +732,10 @@
         </div>
       </main>
     </div>
-
+    <script>console.log("hello")</script>
+    <script src="../scripts/allotment.js"></script>
     <script>
+      console.log("hello");
       function handleLogin() {
         // Simulate admin detection based on email domain
         const isAdmin = prompt(
@@ -892,25 +881,7 @@
         document.getElementById("allotment-form").style.display = "block";
       }
 
-      function allotRooms() {
-        const category = document.getElementById("category").value;
-        const roomType = document.getElementById("allot-room-type").value;
-        const numStudents = document.getElementById("num-students").value;
-        fetch("http://127.0.0.1:5000/allot_roommates", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            category: category,
-            roomType: roomType,
-            numStudents: numStudents,
-          }), // send empty or actual data if needed
-        })
-          .then((response) => response.json())
-          .then((data) => window.alert(data.message))
-          .catch((error) => {
-            console.error("Error:", error);
-          });
-      }
+      
 
       function attachModalClose() {
         const closeBtn = document.querySelector(".modal-close");
