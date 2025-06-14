@@ -1,11 +1,10 @@
 package in.edu.ssn.hostel.service;
 
-import in.edu.ssn.hostel.model.Student;
-import in.edu.ssn.hostel.repo.studentRepo;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
+import in.edu.ssn.hostel.model.Student;
+import in.edu.ssn.hostel.repo.studentRepo;
 
 @Service
 public class studentService {
