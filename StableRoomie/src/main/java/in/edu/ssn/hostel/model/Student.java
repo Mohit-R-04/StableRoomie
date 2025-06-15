@@ -13,20 +13,20 @@ import org.springframework.stereotype.Component;
 public class Student {
     @Id
     private int studentId;
+    private String name;
     private String sleepTime;
     private int year;
-    private int phone;
+    private String phone;
     private String wakeTime;
     private String department;
-    private String StudyTime;
+    private String studyTime;
     private String roomType;
     private String address;
-    private int emergencyContact;
+    private String emergencyContact;
     private String preferredRoommates;
     private String studyHabits;
     private String cleanliness;
-    private String guestPolicy;
     private String lightSensitivity;
     private String noiseLevel;
-    private String hobbies;
+
 }
