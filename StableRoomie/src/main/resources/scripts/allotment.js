@@ -7,12 +7,12 @@ document.querySelector(".js-submitIt")
         const wake = document.querySelector(".js-wake").value;
         const department = document.querySelector(".js-department").value;
         const year = Number(document.querySelector(".js-year").value);
-        const phone = Number(document.querySelector(".js-phone").value);
+        const phone = document.querySelector(".js-phone").value;
         const studentId = Number(document.querySelector(".js-studentId").value);
         const studyTime = document.querySelector(".js-study").value;
         const room = document.querySelector(".js-room").value;
         const address = document.querySelector(".js-home").value;
-        const emergencyContact = Number(document.querySelector(".js-emergency").value);
+        const emergencyContact = document.querySelector(".js-emergency").value;
         const roomMates = document.querySelector(".js-friends").value;
         const studyHabbits = document.querySelector(".js-study").value;
         const clean = document.querySelector(".js-clean").value;
@@ -21,18 +21,18 @@ document.querySelector(".js-submitIt")
         const noise = document.querySelector(".js-noise").value;
        // const hobby = document.querySelector(".js-hobby").value;
         console.log("Form Values:", {
-          name: name,
-          sleepTime: sleep,
-          wakeTime: wake,
-          department: department,
-          year: year,
-          phone: phone,
-          studentId: studentId,
-          studyTime: studyTime,
-          roomType: room,
-          address: address,
-          emergencyContact: emergencyContact,
-          preferredRoommates: roomMates,
+          name: typeof name,
+          sleepTime:typeof sleep,
+          wakeTime:typeof wake,
+          department:typeof department,
+          year:typeof year,
+          phone:typeof phone,
+          studentId:typeof studentId,
+          studyTime:typeof studyTime,
+          roomType:typeof room,
+          address:typeof address,
+          emergencyContact:typeof emergencyContact,
+          preferredRoommates:typeof roomMates,
           studyHabits: studyHabbits,
           cleanliness: clean,
          // guestPolicy: guest,
@@ -41,23 +41,23 @@ document.querySelector(".js-submitIt")
          // hobbies: hobby
         });
         const payload = {
-          name: name,
-          sleepTime: sleep,
-          wakeTime: wake,
-          department: department,
-          year: year,
-          phone: phone,
-          studentId: studentId,
-          studyTime: studyTime,
-          roomType: room,
-          address: address,
-          emergencyContact: emergencyContact,
-          preferredRoommates: roomMates,
-          studyHabits: studyHabbits,
-          cleanliness: clean,
+          "name": name,
+          "sleepTime": sleep,
+          "wakeTime": wake,
+          "department": department,
+          "year": year,
+          "phone": phone,
+          "studentId": studentId,
+          "studyTime": studyTime,
+          "roomType": room,
+          "address": address,
+          "emergencyContact": emergencyContact,
+          "preferredRoommates": roomMates,
+          "studyHabits": studyHabbits,
+          "cleanliness": clean,
           
-          lightSensitivity: light,
-          noiseLevel: noise,
+          "lightSensitivity": light,
+          "noiseLevel": noise,
           
         };
 

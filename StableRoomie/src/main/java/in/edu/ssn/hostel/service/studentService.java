@@ -10,10 +10,11 @@ import in.edu.ssn.hostel.repo.studentRepo;
 public class studentService {
     @Autowired
     studentRepo repo;
-    public void addStudent(Student stud){
+    public Student addStudent(Student stud){
         repo.save(stud);
+        return stud;
     }
-    public Student getStudent(Integer studId){
-        return repo.findById(studId).orElse(null);
+    public List<Student> getStudents(){
+        return repo.findAll();
     }
 }
