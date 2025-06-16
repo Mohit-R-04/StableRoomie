@@ -684,11 +684,11 @@
                   <select
                     id="location"
                     class="form-select"
-                    onchange="updateCategoryOptions()"
                   >
                     <option value="">Select location</option>
                     <option value="chennai">Chennai Students</option>
                     <option value="non-chennai">Non-Chennai Students</option>
+                    <option value="both">Both</option>
                   </select>
                 </div>
                 <div class="form-group">
@@ -696,12 +696,12 @@
                   <select
                     id="category"
                     class="form-select"
-                    onchange="showAllotmentForm()"
+                    onclick="showCategoryForm()"
                   >
-                    <option value="">Select category</option>
+                    <div id="categorydiv"><option value="">Select Category</option></div>
                   </select>
                 </div>
-                <div id="allotment-form" style="display: none">
+                <div id="allotment-form">
                   <div class="form-group">
                     <label for="allot-room-type">Room Type</label>
                     <select id="allot-room-type" class="form-select">
@@ -734,162 +734,5 @@
     </div>
     <script>console.log("hello")</script>
     <script src="../scripts/allotment.js"></script>
-    <script>
-      console.log("hello");
-      function handleLogin() {
-        // Simulate admin detection based on email domain
-        const isAdmin = prompt(
-          "Enter email (use @ssn.admin.edu.in for admin):"
-        ).endsWith("@ssn.admin.edu.in");
-        document
-          .querySelectorAll(".page")
-          .forEach((page) => page.classList.remove("active"));
-        if (isAdmin) {
-          document
-            .getElementById("admin-dashboard-page")
-            .classList.add("active");
-        } else {
-          document.getElementById("dashboard-page").classList.add("active");
-        }
-      }
-
-      function showDashboard() {
-        document
-          .querySelectorAll(".page")
-          .forEach((page) => page.classList.remove("active"));
-        document.getElementById("dashboard-page").classList.add("active");
-      }
-
-      function showLanding() {
-        document
-          .querySelectorAll(".page")
-          .forEach((page) => page.classList.remove("active"));
-        document.getElementById("landing-page").classList.add("active");
-      }
-
-      function showPreferences() {
-        document
-          .querySelectorAll(".page")
-          .forEach((page) => page.classList.remove("active"));
-        document.getElementById("preferences-page").classList.add("active");
-      }
-
-      function showAddCategoryModal() {
-        const modalTemplate = document
-          .getElementById("modal-template")
-          .content.cloneNode(true);
-        modalTemplate.querySelector(".modal-body").innerHTML = `
-          <h3>Add Category</h3>
-          <form class="form">
-            <div class="form-group">
-              <label for="category-name">Category Name</label>
-              <input id="category-name" type="text" class="form-input" placeholder="e.g., 2nd Year SSN Students" />
-            </div>
-            <button type="submit" class="btn primary">Add Category</button>
-          </form>
-        `;
-        document.body.appendChild(modalTemplate);
-        attachModalClose();
-      }
-
-      function showEditCategoryModal() {
-        const modalTemplate = document
-          .getElementById("modal-template")
-          .content.cloneNode(true);
-        modalTemplate.querySelector(".modal-body").innerHTML = `
-          <h3>Edit Category</h3>
-          <form class="form">
-            <div class="form-group">
-              <label for="category-name">Category Name</label>
-              <input id="category-name" type="text" class="form-input" value="1st Year SSN Students" />
-            </div>
-            <button type="submit" class="btn primary">Save Changes</button>
-          </form>
-        `;
-        document.body.appendChild(modalTemplate);
-        attachModalClose();
-      }
-
-      function showAddRoomTypeModal() {
-        const modalTemplate = document
-          .getElementById("modal-template")
-          .content.cloneNode(true);
-        modalTemplate.querySelector(".modal-body").innerHTML = `
-          <h3>Add Room Type</h3>
-          <form class="form">
-            <div class="form-group">
-              <label for="room-type-name">Room Type Name</label>
-              <input id="room-type-name" type="text" class="form-input" placeholder="e.g., Triple Sharing" />
-            </div>
-            <div class="form-group">
-              <label for="allowed-categories">Allowed Categories</label>
-              <select id="allowed-categories" class="form-select" multiple>
-                <option value="1st-year">1st Year SSN Students</option>
-                <option value="3rd-year">3rd Year SSN Students</option>
-              </select>
-            </div>
-            <button type="submit" class="btn primary">Add Room Type</button>
-          </form>
-        `;
-        document.body.appendChild(modalTemplate);
-        attachModalClose();
-      }
-
-      function showEditRoomTypeModal() {
-        const modalTemplate = document
-          .getElementById("modal-template")
-          .content.cloneNode(true);
-        modalTemplate.querySelector(".modal-body").innerHTML = `
-          <h3>Edit Room Type</h3>
-          <form class="form">
-            <div class="form-group">
-              <label for="room-type-name">Room Type Name</label>
-              <input id="room-type-name" type="text" class="form-input" value="Single Room" />
-            </div>
-            <div class="form-group">
-              <label for="allowed-categories">Allowed Categories</label>
-              <select id="allowed-categories" class="form-select" multiple>
-                <option value="1st-year">1st Year SSN Students</option>
-                <option value="3rd-year" selected>3rd Year SSN Students</option>
-              </select>
-            </div>
-            <button type="submit" class="btn primary">Save Changes</button>
-          </form>
-        `;
-        document.body.appendChild(modalTemplate);
-        attachModalClose();
-      }
-
-      function updateCategoryOptions() {
-        const location = document.getElementById("location").value;
-        const categorySelect = document.getElementById("category");
-        categorySelect.innerHTML = '<option value="">Select category</option>';
-        if (location === "chennai") {
-          categorySelect.innerHTML += `
-            <option value="1st-year-chennai">1st Year SSN Students (Chennai)</option>
-            <option value="3rd-year-chennai">3rd Year SSN Students (Chennai)</option>
-          `;
-        } else if (location === "non-chennai") {
-          categorySelect.innerHTML += `
-            <option value="1st-year-non-chennai">1st Year SSN Students (Non-Chennai)</option>
-            <option value="3rd-year-non-chennai">3rd Year SSN Students (Non-Chennai)</option>
-          `;
-        }
-      }
-
-      function showAllotmentForm() {
-        document.getElementById("allotment-form").style.display = "block";
-      }
-
-      
-
-      function attachModalClose() {
-        const closeBtn = document.querySelector(".modal-close");
-        closeBtn.addEventListener("click", () => {
-          const modal = closeBtn.closest(".modal");
-          modal.remove();
-        });
-      }
-    </script>
   </body>
 </html>

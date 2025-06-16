@@ -1,19 +1,17 @@
 package in.edu.ssn.hostel.model;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-@Entity
 @Data
-@NoArgsConstructor
 @AllArgsConstructor
-public class Rooms {
+@NoArgsConstructor
+public class filter {
 
-    @Id
-    private String roomId;
+    private String location;
+    private String category;
     private String roomType;
-    private int noOfStudents;
+    private int numStudents;
+
 }
