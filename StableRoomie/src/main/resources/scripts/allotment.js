@@ -1,4 +1,4 @@
-console.log("hello");
+import dayjs from 'https://unpkg.com/supersimpledev@8.5.0/dayjs/esm/index.js';
 document.querySelector(".js-submitIt")
     .addEventListener("click", async(event)=>{
         event.preventDefault();
@@ -19,6 +19,8 @@ document.querySelector(".js-submitIt")
         //const guest = document.querySelector(".js-guest").value;
         const light = document.querySelector(".js-light").value;
         const noise = document.querySelector(".js-noise").value;
+        const timeStamp = dayjs().toISOString();
+        const location = document.querySelector(".js-location").value;
        // const hobby = document.querySelector(".js-hobby").value;
         console.log("Form Values:", {
           name: typeof name,
@@ -58,6 +60,8 @@ document.querySelector(".js-submitIt")
           
           "lightSensitivity": light,
           "noiseLevel": noise,
+          "timeStamp": timeStamp,
+          "location": location
           
         };
 

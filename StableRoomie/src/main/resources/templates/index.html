@@ -542,6 +542,21 @@
                       </option>
                     </select>
                   </div> 
+                  <div class="form-group">
+                    <label for="location">chennai or non chennai *</label>
+                    <select
+                      id="location"
+                      class="form-select js-location"
+                      required
+                      aria-required="true"
+                    >
+                      <option value="chennai" selected>
+                        Chennai
+                      </option>
+                      <option value="non-chennai">Non-Chennai</option>
+                      
+                    </select>
+                  </div>
                 </div>
 
                 
@@ -733,7 +748,7 @@
       </main>
     </div>
     <script>console.log("hello")</script>
-    <script src="../scripts/allotment.js"></script>
+    <script src="../scripts/allotment.js" type="module"></script>
     <script>
       console.log("hello");
       function handleLogin() {

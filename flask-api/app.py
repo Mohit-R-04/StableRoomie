@@ -4,7 +4,7 @@ from flask import Flask, request, jsonify
 from datetime import datetime
 import itertools
 from flask_cors import CORS
-import requests 
+import requests
 
 import model.students as student
 import service.allot as allot

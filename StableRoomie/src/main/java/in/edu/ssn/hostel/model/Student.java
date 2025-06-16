@@ -6,6 +6,8 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.springframework.stereotype.Component;
 
+import java.time.OffsetDateTime;
+
 @Entity
 @Data
 @NoArgsConstructor
@@ -28,5 +30,7 @@ public class Student {
     private String cleanliness;
     private String lightSensitivity;
     private String noiseLevel;
+    private OffsetDateTime timeStamp;
+    private String location;
 
 }
