@@ -11,6 +11,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class Groups {
+
     @Id
     private String groupId;
     private int student_1;
