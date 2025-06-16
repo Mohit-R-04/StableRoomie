@@ -4,7 +4,7 @@ document
     event.preventDefault();
     const tym = new Date().toISOString();
     const name = document.querySelector(".js-name").value;
-    const clg = "ssn";
+    const clg = "ssn"; // yet to be implemented
     const sleep = document.querySelector(".js-sleep").value;
     const wake = document.querySelector(".js-wake").value;
     const department = document.querySelector(".js-department").value;
@@ -16,17 +16,18 @@ document
     const address = document.querySelector(".js-home").value;
     const emergencyContact = document.querySelector(".js-emergency").value;
     const roomMates = document.querySelector(".js-friends").value;
-    const studyHabbits = document.querySelector(".js-study").value;
+    const studyHabbits = document.querySelector(".js-studyHabits").value; // Fix typo: use .js-studyHabits
     const clean = document.querySelector(".js-clean").value;
-    //const guest = document.querySelector(".js-guest").value;
     const light = document.querySelector(".js-light").value;
     const noise = document.querySelector(".js-noise").value;
-    // const hobby = document.querySelector(".js-hobby").value;
     const location = document.querySelector(".js-location").value;
+
+    // Map the clg value to the full name expected by the backend
+    const clgFullName = clg === "ssn" ? "SSN College" : "Shiv Nadar University";
 
     const payload = {
       name: name,
-      clg: clg,
+      clg: clgFullName, // Use the full name for the backend
       sleepTime: sleep,
       wakeTime: wake,
       department: department,
@@ -218,10 +219,31 @@ function showEditRoomTypeModal() {
 }
 
 function showCategoryForm() {
-  document.getElementById("categorydiv").innerHTML = `
-  <option value="ssnit1st">1st year ssn it</option>
-  <option value="ssncse2nd">2nd year ssn cse</option>
-`;
+  const categorySelect = document.getElementById("category");
+  // Clear existing options except the placeholder
+  categorySelect.innerHTML = '<option value="">Select Category</option>';
+
+  // Define colleges, departments, and years
+  const colleges = [
+    { prefix: "ssn", name: "SSN College" },
+    { prefix: "snu", name: "Shiv Nadar University" },
+  ];
+  const departments = ["cse", "ece", "eee", "mech", "civil", "it", "bme"];
+  const years = ["1st", "2nd", "3rd", "4th"];
+
+  // Generate options for each combination
+  colleges.forEach((college) => {
+    departments.forEach((dept) => {
+      years.forEach((year) => {
+        const value = `${college.prefix}${dept}${year}`; // e.g., "ssncse2nd", "snuece1st"
+        const text = `${college.name} ${dept.toUpperCase()} ${year} Year`;
+        const option = document.createElement("option");
+        option.value = value;
+        option.text = text;
+        categorySelect.appendChild(option);
+      });
+    });
+  });
 }
 
 function attachModalClose() {

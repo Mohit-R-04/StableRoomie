@@ -29,10 +29,6 @@ public class StudentController {
     @PostMapping("/getStudents")
     public List<Student> getStudents(@RequestBody filter filters) {
         List<Student> s = students.getStudents(filters);
-        if (s.isEmpty()) {
-            return null;
-        }
-        return s;
+        return s != null ? s : new java.util.ArrayList<>();
     }
-
 }

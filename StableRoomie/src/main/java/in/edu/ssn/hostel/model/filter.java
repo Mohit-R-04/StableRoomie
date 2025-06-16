@@ -12,6 +12,6 @@ public class filter {
     private String location;
     private String category;
     private String roomType;
-    private int numStudents;
+    private String numStudents;
 
 }
