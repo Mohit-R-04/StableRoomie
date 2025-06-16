@@ -34,6 +34,8 @@ public class Student {
     private String cleanliness;
     private String lightSensitivity;
     private String noiseLevel;
+
     @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
     private LocalDateTime submittedTime;
+    private String location;
 }

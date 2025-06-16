@@ -22,6 +22,7 @@ document
     const light = document.querySelector(".js-light").value;
     const noise = document.querySelector(".js-noise").value;
     // const hobby = document.querySelector(".js-hobby").value;
+    const location = document.querySelector(".js-location").value;
 
     const payload = {
       name: name,
@@ -42,6 +43,7 @@ document
       lightSensitivity: light,
       noiseLevel: noise,
       submittedTime: tym,
+      location: location,
     };
 
     try {
