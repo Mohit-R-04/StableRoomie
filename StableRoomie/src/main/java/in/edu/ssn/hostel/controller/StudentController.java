@@ -1,6 +1,7 @@
 package in.edu.ssn.hostel.controller;
 
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -31,4 +32,11 @@ public class StudentController {
         List<Student> s = students.getStudents(filters);
         return s != null ? s : new java.util.ArrayList<>();
     }
+    @PostMapping("/save-groups")
+    public ResponseEntity<String> saveGroups(@RequestBody Map<String, Object> payload){
+        students.saveGroups(payload);
+        return ResponseEntity.ok("success");
+    }
+
+
 }

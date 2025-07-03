@@ -650,42 +650,58 @@
 
             <!-- Manage Room Types -->
             <div class="dashboard-card glass-card">
-              <div class="card-header">
-                <h3>🏠 Manage Room Types</h3>
-                <p>Add, remove, or edit room types and access</p>
-              </div>
-              <div class="card-content">
-                <div class="room-type-list">
-                  <div class="room-type-item">
-                    <span>Single Room (Access: 3rd, 4th Year)</span>
-                    <div class="room-type-actions">
-                      <button
-                        class="btn secondary small"
-                        onclick="showEditRoomTypeModal()"
-                      >
-                        Edit
-                      </button>
-                      <button class="btn secondary small remove">Remove</button>
-                    </div>
-                  </div>
-                  <div class="room-type-item">
-                    <span>Double Sharing (Access: All Years)</span>
-                    <div class="room-type-actions">
-                      <button
-                        class="btn secondary small"
-                        onclick="showEditRoomTypeModal()"
-                      >
-                        Edit
-                      </button>
-                      <button class="btn secondary small remove">Remove</button>
-                    </div>
-                  </div>
-                </div>
-                <button class="btn primary" onclick="showAddRoomTypeModal()">
-                  Add Room Type
-                </button>
-              </div>
-            </div>
+  <div class="card-header">
+    <h3>🏠 Manage Room Types</h3>
+    <p>Add, remove, or edit room types</p>
+  </div>
+
+  <div class="card-content">
+    <!-- Room Type List -->
+    <div class="room-type-list">
+      <div class="room-type-item">
+        <span><strong>Single Room</strong></span>
+        <div class="room-type-actions">
+          <form action="/edit-room-type" method="post" style="display: inline;">
+            <input type="hidden" name="roomType" value="Single Room" />
+            <button class="btn secondary small" type="submit">Edit</button>
+          </form>
+          <form action="/remove-room-type" method="post" style="display: inline;">
+            <input type="hidden" name="roomType" value="Single Room" />
+            <button class="btn secondary small remove" type="submit">Remove</button>
+          </form>
+        </div>
+      </div>
+
+      <div class="room-type-item">
+        <span><strong>Double Sharing</strong></span>
+        <div class="room-type-actions">
+          <form action="/edit-room-type" method="post" style="display: inline;">
+            <input type="hidden" name="roomType" value="Double Sharing" />
+            <button class="btn secondary small" type="submit">Edit</button>
+          </form>
+          <form action="/remove-room-type" method="post" style="display: inline;">
+            <input type="hidden" name="roomType" value="Double Sharing" />
+            <button class="btn secondary small remove" type="submit">Remove</button>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Add Room Type Form -->
+    <form action="/add-room-type" method="post" class="add-room-type-form" style="margin-top: 20px;">
+      <h4>Add New Room Type</h4>
+
+      <div class="form-group">
+        <label for="newRoomType">Room Type</label>
+        <input type="text" id="newRoomType" name="roomType" placeholder="e.g., Triple Sharing" required />
+      </div>
+
+      <button class="btn primary" type="submit">Add Room Type</button>
+    </form>
+  </div>
+</div>
+
+                
 
             <!-- Allot Rooms -->
             <div class="dashboard-card glass-card">
@@ -708,7 +724,7 @@
                 </div>
                 <div class="form-group">
                   <label for="category">Category</label>
-                  <select id="category" class="form-select" onclick="showCategoryForm()">
+                  <select id="category" class="form-select" onfocus="showCategoryForm()">
                     <option value="">Select Category</option>
                   </select>
               </div>
