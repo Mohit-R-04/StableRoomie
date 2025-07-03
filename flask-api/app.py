@@ -52,7 +52,16 @@ def allot_roommates():
 
     # Perform the allotment
     try:
-        allotment = allot.allotment(students)
+        allotment, roomType = allot.allotment(students)
+        print(allotment)
+        print(roomType)
+        payload = {"groups":[], "roomType": roomType}
+        for group in allotment:
+            formGroup = {"student_1": group[0], "students_2": group[1], "student_3": group[2]}
+            payload["groups"].append(formGroup)
+        print(payload)
+        response = requests.post("http://localhost:8080/save-groups", json=payload, headers=headers)
+        print(response)
         print(allotment)
         return jsonify({"message": "Allotment Successful"})
     except Exception as e:  # Fixed: Use Exception instead of sys.exception
