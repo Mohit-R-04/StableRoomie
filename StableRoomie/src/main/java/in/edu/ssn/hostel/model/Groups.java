@@ -1,7 +1,6 @@
 package in.edu.ssn.hostel.model;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
+import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -13,9 +12,18 @@ import lombok.NoArgsConstructor;
 public class Groups {
 
     @Id
-    private String groupId;
+    @SequenceGenerator(
+            name = "student_sequence",
+            sequenceName = "student_sequence",
+            allocationSize = 1
+    )
+    @GeneratedValue(
+            strategy = GenerationType.SEQUENCE,
+            generator = "student_sequence"
+    )
+    private Long id;
     private int student_1;
     private int student_2;
     private int student_3;
-    private String roomId;
+    private Long roomId;
 }

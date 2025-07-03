@@ -208,4 +208,4 @@ def allotment(students):
     elif len(leftover) == 2:
         groups.append([leftover[0]["studentId"], leftover[1]["studentId"]])
         
-    return groups
+    return groups,students[0]["roomType"]

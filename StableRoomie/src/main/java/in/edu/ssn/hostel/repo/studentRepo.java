@@ -1,6 +1,7 @@
 package in.edu.ssn.hostel.repo;
 
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -30,4 +31,5 @@ public interface studentRepo extends JpaRepository<Student, Integer> {
             @Param("category") String category,
             @Param("roomType") String roomType,
             Pageable pageable);
+
 }
