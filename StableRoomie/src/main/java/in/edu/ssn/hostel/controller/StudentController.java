@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import in.edu.ssn.hostel.model.Student;
 import in.edu.ssn.hostel.model.filter;
+import in.edu.ssn.hostel.service.GroupService;
 import in.edu.ssn.hostel.service.studentService;
 
 @CrossOrigin
@@ -20,6 +21,8 @@ public class StudentController {
 
     @Autowired
     studentService students;
+    @Autowired
+    GroupService group;
 
     @PostMapping("/saveStudents")
     public ResponseEntity<Student> addStudent(@RequestBody Student stud) {
@@ -32,11 +35,11 @@ public class StudentController {
         List<Student> s = students.getStudents(filters);
         return s != null ? s : new java.util.ArrayList<>();
     }
+
     @PostMapping("/save-groups")
-    public ResponseEntity<String> saveGroups(@RequestBody Map<String, Object> payload){
-        students.saveGroups(payload);
+    public ResponseEntity<String> saveGroups(@RequestBody Map<String, Object> payload) {
+        group.saveGroups(payload);
         return ResponseEntity.ok("success");
     }
-
 
 }

@@ -692,11 +692,15 @@
       <h4>Add New Room Type</h4>
 
       <div class="form-group">
-        <label for="newRoomType">Room Type</label>
-        <input type="text" id="newRoomType" name="roomType" placeholder="e.g., Triple Sharing" required />
+        <label for="newRoomType">Hostel Name</label>
+        <input class="js-getHostel" type="text" id="newRoomType" name="roomType" placeholder="e.g., GH-9 ..." required />
+      </div>
+      <div class="form-group">
+        <label for="newRoomNo">Room Type</label>
+        <input class="js-getRoomNo" type="text" id="newRoomNo" name="roomNo" placeholder="e.g., no of persons in a room" required />
       </div>
 
-      <button class="btn primary" type="submit">Add Room Type</button>
+      <button class="btn primary js-add-button" type="submit">Add </button>
     </form>
   </div>
 </div>
