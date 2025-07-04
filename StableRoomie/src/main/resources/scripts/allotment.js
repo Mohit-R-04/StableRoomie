@@ -253,3 +253,12 @@ function attachModalClose() {
     modal.remove();
   });
 }
+function sendRoomAndHostel(){
+  const addButton = document.querySelector(".js-add-button");
+  addButton.addEventListener("click", ()=>{
+    const name = document.querySelector("js-getHostel").value;
+    const no = document.querySelector("js-getRoomNo").value;
+    obj = {name, no}
+    fetch("http://localhost:8080/")
+  })
+}
