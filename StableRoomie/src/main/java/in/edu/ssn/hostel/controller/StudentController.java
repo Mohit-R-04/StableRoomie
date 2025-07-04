@@ -3,6 +3,7 @@ package in.edu.ssn.hostel.controller;
 import java.util.List;
 import java.util.Map;
 
+import in.edu.ssn.hostel.service.GroupService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
@@ -20,6 +21,8 @@ public class StudentController {
 
     @Autowired
     studentService students;
+    @Autowired
+    GroupService group;
 
     @PostMapping("/saveStudents")
     public ResponseEntity<Student> addStudent(@RequestBody Student stud) {
@@ -34,7 +37,7 @@ public class StudentController {
     }
     @PostMapping("/save-groups")
     public ResponseEntity<String> saveGroups(@RequestBody Map<String, Object> payload){
-        students.saveGroups(payload);
+        group.saveGroups(payload);
         return ResponseEntity.ok("success");
     }
 
