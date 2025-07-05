@@ -141,13 +141,53 @@ function showAddCategoryModal() {
           <form class="form">
             <div class="form-group">
               <label for="category-name">Category Name</label>
-              <input id="category-name" type="text" class="form-input" placeholder="e.g., 2nd Year SSN Students" />
+              <select id="category-college" class="form-input">
+                <option value="">-- Select College --</option>
+                <option value="ssn">SSN</option>
+                <option value="snu">SNU</option>
+              </select>
+              <select id="category-department" class="form-input">
+                <option value="">-- Select Department --</option>
+                <option value="cse">CSE</option>
+                <option value="ece">ECE</option>
+                <option value="eee">EEE</option>
+                <option value="mech">Mechanical</option>
+                <option value="civil">Civil</option>
+                <option value="it">IT</option>
+                <option value="bme">BME</option>
+              </select>
+              <select id="category-year" class="form-input">
+                <option value="">-- Select Year --</option>
+                <option value="1st">1st</option>
+                <option value="2nd">2nd</option>
+                <option value="3rd">3rd</option>
+                <option value="4th">4th</option>
+              </select>
             </div>
-            <button type="submit" class="btn primary">Add Category</button>
+            <button onclick="addCategory()" class="btn primary">Add Category</button>
           </form>
         `;
   document.body.appendChild(modalTemplate);
   attachModalClose();
+}
+
+async function addCategory() {
+  const clg = document.getElementById("category-college").value;
+  const department = document.getElementById("category-department").value;
+  const year = document.getElementById("category-year").value;
+  if (!(category && clg && department && year)) {
+    alert("Please fill all details");
+    return false;
+  }
+  const category = clg + department + year;
+  const request = await fetch("http://localhost:8080/save-category", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(category),
+  });
+  console.log(request.json());
 }
 
 function showEditCategoryModal() {
@@ -253,12 +293,12 @@ function attachModalClose() {
     modal.remove();
   });
 }
-function sendRoomAndHostel(){
+function sendRoomAndHostel() {
   const addButton = document.querySelector(".js-add-button");
-  addButton.addEventListener("click", ()=>{
+  addButton.addEventListener("click", () => {
     const name = document.querySelector("js-getHostel").value;
     const no = document.querySelector("js-getRoomNo").value;
-    obj = {name, no}
-    fetch("http://localhost:8080/")
-  })
+    obj = { name, no };
+    fetch("http://localhost:8080/");
+  });
 }

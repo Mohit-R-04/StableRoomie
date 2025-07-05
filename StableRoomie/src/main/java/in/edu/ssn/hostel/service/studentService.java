@@ -25,6 +25,7 @@ public class studentService {
     public List<Student> getStudents(filter filters) {
         String location = filters.getLocation();
         String category = filters.getCategory();
+        System.out.println(category);
         String roomType = filters.getRoomType();
         String numStudentsStr = filters.getNumStudents();
 
