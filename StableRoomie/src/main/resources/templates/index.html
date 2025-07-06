@@ -616,31 +616,8 @@
                 <p>Add, remove, or edit student categories</p>
               </div>
               <div class="card-content">
-                <div class="category-list">
-                  <div class="category-item">
-                    <span>1st Year SSN Students</span>
-                    <div class="category-actions">
-                      <button
-                        class="btn secondary small"
-                        onclick="showEditCategoryModal()"
-                      >
-                        Edit
-                      </button>
-                      <button class="btn secondary small remove">Remove</button>
-                    </div>
-                  </div>
-                  <div class="category-item">
-                    <span>3rd Year SSN Students</span>
-                    <div class="category-actions">
-                      <button
-                        class="btn secondary small"
-                        onclick="showEditCategoryModal()"
-                      >
-                        Edit
-                      </button>
-                      <button class="btn secondary small remove">Remove</button>
-                    </div>
-                  </div>
+                <div id="category-list" class="category-list">
+                  <!-- Categories will be dynamically populated here -->
                 </div>
                 <button class="btn primary" onclick="showAddCategoryModal()">
                   Add Category

@@ -1,5 +1,6 @@
 package in.edu.ssn.hostel.service;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,12 +26,24 @@ public class studentService {
     public List<Student> getStudents(filter filters) {
         String location = filters.getLocation();
         String category = filters.getCategory();
-        System.out.println(category);
         String roomType = filters.getRoomType();
         String numStudentsStr = filters.getNumStudents();
 
-        // Safely parse numStudents with a default value
+        String clg;
+        String department;
+        String clgDepartmentYear;
         int numStudents;
+        String year;
+
+        ArrayList<String> cdd = new ArrayList<>();
+        try {
+            for (String i : category.split("-")) {
+                cdd.add(i);
+            }
+        } catch (Exception e) {
+            throw new IllegalArgumentException("Invalid category format");
+        }
+
         try {
             numStudents = (numStudentsStr != null && !numStudentsStr.isEmpty())
                     ? Integer.parseInt(numStudentsStr)
@@ -38,62 +51,24 @@ public class studentService {
         } catch (NumberFormatException e) {
             numStudents = 100;
         }
+        System.out.print(cdd);
 
-        // Parse the category field (e.g., 'ssncse2nd' -> 'SSN College+CSE+2', 'snucse1st' -> 'Shiv Nadar University+CSE+1')
-        String clgDepartmentYear = null;
-        if (category != null && !category.isEmpty()) {
-            String clg = null;
-            String deptYear = null;
-
-            // Check for college prefix (ssn or snu)
-            if (category.startsWith("ssn")) {
-                clg = "SSN College";
-                deptYear = category.substring(3); // Remove "ssn" prefix
-            } else if (category.startsWith("snu")) {
-                clg = "Shiv Nadar University";
-                deptYear = category.substring(3); // Remove "snu" prefix
-            }
-
-            String department = null;
-            String year = null;
-            if (deptYear != null) {
-                // Extract department and year
-                if (deptYear.startsWith("cse")) {
-                    department = "CSE";
-                } else if (deptYear.startsWith("ece")) {
-                    department = "ECE";
-                } else if (deptYear.startsWith("eee")) {
-                    department = "EEE";
-                } else if (deptYear.startsWith("mech")) {
-                    department = "MECH";
-                } else if (deptYear.startsWith("civil")) {
-                    department = "CIVIL";
-                } else if (deptYear.startsWith("it")) {
-                    department = "IT";
-                } else if (deptYear.startsWith("bme")) {
-                    department = "BME";
-                }
-
-                if (deptYear.endsWith("1st")) {
-                    year = "1";
-                } else if (deptYear.endsWith("2nd")) {
-                    year = "2";
-                } else if (deptYear.endsWith("3rd")) {
-                    year = "3";
-                } else if (deptYear.endsWith("4th")) {
-                    year = "4";
-                }
-            }
-
-            if (clg != null && department != null && year != null) {
-                clgDepartmentYear = clg + "+" + department + "+" + year;
-            } else {
-                clgDepartmentYear = category; // Fallback if parsing fails
-            }
+        if (cdd.get(0).equals("ssn")) {
+            clg = "SSN College";
+        } else {
+            clg = "Shiv Nadar University";
         }
+
+        // Extract department and year
+        department = cdd.get(1).toUpperCase();
+
+        year = cdd.get(2);
+
+        clgDepartmentYear = clg + "+" + department + "+" + year;
 
         Pageable pageable = PageRequest.of(0, numStudents);
 
+        // TODO: PROBLEM WITH FILTER
         if ("both".equalsIgnoreCase(location)) {
             return repo.findByCategoryAndRoomType(clgDepartmentYear, roomType, pageable);
         } else {
