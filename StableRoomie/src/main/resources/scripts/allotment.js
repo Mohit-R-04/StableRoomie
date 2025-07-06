@@ -97,13 +97,22 @@ function allotRooms() {
 }
 
 function handleLogin() {
-  // Simulate admin detection based on email domain
-  const isAdmin = prompt(
-    "Enter email (use @ssn.admin.edu.in for admin):"
-  ).endsWith("@ssn.admin.edu.in");
+  // Prompt for email and handle null case
+  const email = prompt("Enter email (use @ssn.admin.edu.in for admin):");
+
+  // Check if user clicked Cancel
+  if (!email) {
+    return; // Exit function if user cancelled
+  }
+
+  const isAdmin = email.endsWith("@ssn.admin.edu.in");
+
+  // Remove active class from all pages
   document
     .querySelectorAll(".page")
     .forEach((page) => page.classList.remove("active"));
+
+  // Show appropriate dashboard
   if (isAdmin) {
     document.getElementById("admin-dashboard-page").classList.add("active");
   } else {
@@ -146,22 +155,14 @@ function showAddCategoryModal() {
                 <option value="ssn">SSN</option>
                 <option value="snu">SNU</option>
               </select>
-              <select id="category-department" class="form-input">
-                <option value="">-- Select Department --</option>
-                <option value="cse">CSE</option>
-                <option value="ece">ECE</option>
-                <option value="eee">EEE</option>
-                <option value="mech">Mechanical</option>
-                <option value="civil">Civil</option>
-                <option value="it">IT</option>
-                <option value="bme">BME</option>
-              </select>
+              <input type ="text" placeholder ="Department" id="category-department" class="form-input"/>
               <select id="category-year" class="form-input">
                 <option value="">-- Select Year --</option>
                 <option value="1st">1st</option>
                 <option value="2nd">2nd</option>
                 <option value="3rd">3rd</option>
                 <option value="4th">4th</option>
+                <option value="5th">5th</option>
               </select>
             </div>
             <button onclick="addCategory()" class="btn primary">Add Category</button>
@@ -171,15 +172,63 @@ function showAddCategoryModal() {
   attachModalClose();
 }
 
+async function showCategory() {
+  try {
+    const response = await fetch("http://localhost:8080/get-category");
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    const categories = await response.json();
+    const categoryList = document.getElementById("category-list");
+
+    // Clear existing content
+    categoryList.innerHTML = "";
+    console.log(categories);
+
+    // Add each category to the list
+    categories.forEach((category) => {
+      const categoryItem = document.createElement("div");
+      categoryItem.className = "category-item";
+
+      // Use the category value directly without parsing
+      const categoryValue = category.category || "";
+
+      categoryItem.innerHTML = `
+        <span> > Category Name : ${categoryValue}</span>
+        <div class="category-actions">
+          <button class="btn secondary small" onclick="showEditCategoryModal(${category.id}, '${categoryValue}')">Edit</button>
+          <button class="btn secondary small remove" onclick="removeCategory(${category.id})">Remove</button>
+        </div>
+      `;
+      categoryList.appendChild(categoryItem);
+    });
+  } catch (error) {
+    console.error("Error fetching categories:", error);
+    const categoryList = document.getElementById("category-list");
+    categoryList.innerHTML =
+      '<div class="error-message">Failed to load categories. Please try again later.</div>';
+  }
+}
+
+// Call this function when the page loads
+document.addEventListener("DOMContentLoaded", showCategory);
+
+// Call this function after adding, editing, or removing a category
+function refreshCategories() {
+  showCategory();
+}
 async function addCategory() {
   const clg = document.getElementById("category-college").value;
   const department = document.getElementById("category-department").value;
   const year = document.getElementById("category-year").value;
-  if (!(category && clg && department && year)) {
+  const category = clg + "-" + department + "-" + year;
+
+  if (!(clg && department && year)) {
     alert("Please fill all details");
     return false;
   }
-  const category = clg + department + year;
+
+  console.log(category);
   const request = await fetch("http://localhost:8080/save-category", {
     method: "POST",
     headers: {
@@ -258,32 +307,26 @@ function showEditRoomTypeModal() {
   attachModalClose();
 }
 
-function showCategoryForm() {
+async function showCategoryForm() {
   const categorySelect = document.getElementById("category");
   // Clear existing options except the placeholder
   categorySelect.innerHTML = '<option value="">Select Category</option>';
-
-  // Define colleges, departments, and years
-  const colleges = [
-    { prefix: "ssn", name: "SSN College" },
-    { prefix: "snu", name: "Shiv Nadar University" },
-  ];
-  const departments = ["cse", "ece", "eee", "mech", "civil", "it", "bme"];
-  const years = ["1st", "2nd", "3rd", "4th"];
-
-  // Generate options for each combination
-  colleges.forEach((college) => {
-    departments.forEach((dept) => {
-      years.forEach((year) => {
-        const value = `${college.prefix}${dept}${year}`; // e.g., "ssncse2nd", "snuece1st"
-        const text = `${college.name} ${dept.toUpperCase()} ${year} Year`;
-        const option = document.createElement("option");
-        option.value = value;
-        option.text = text;
-        categorySelect.appendChild(option);
-      });
+  try {
+    const response = await fetch("http://localhost:8080/get-category");
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    const categories = await response.json();
+    // Generate options for each combination
+    categories.forEach((category) => {
+      const option = document.createElement("option");
+      option.value = category.category;
+      option.text = category.category.toUpperCase();
+      categorySelect.appendChild(option);
     });
-  });
+  } catch (error) {
+    console.error("Error fetching categories:", error);
+  }
 }
 
 function attachModalClose() {

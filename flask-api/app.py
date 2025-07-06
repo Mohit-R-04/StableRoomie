@@ -24,6 +24,7 @@ def allot_roommates():
 
     print("Request Data Sent:", request_data)
 
+
     # Make the POST request to the Java backend
     response = requests.post("http://localhost:8080/getStudents", json=request_data, headers=headers)
 
@@ -52,6 +53,9 @@ def allot_roommates():
 
     # Perform the allotment
     try:
+        roomType = request_data.get("roomType")
+
+        # TODO: NEED TO CHANGE 
         allotment, roomType = allot.allotment(students)
         print(allotment)
         print(roomType)
