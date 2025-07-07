@@ -338,10 +338,70 @@ function attachModalClose() {
 }
 function sendRoomAndHostel() {
   const addButton = document.querySelector(".js-add-button");
-  addButton.addEventListener("click", () => {
-    const name = document.querySelector("js-getHostel").value;
-    const no = document.querySelector("js-getRoomNo").value;
-    obj = { name, no };
-    fetch("http://localhost:8080/");
+  addButton.addEventListener("click", async(event) => {
+    event.preventDefault();
+    const name = document.querySelector(".js-getHostel").value;
+    const no = document.querySelector(".js-getRoomNo").value;
+    obj = { name, no: Number(no) };
+    
+    const response = await fetch("http://localhost:8080/room-details", {
+      method : "POST",
+      headers : {
+        "Content-Type" : "application/json"
+      },
+      body : JSON.stringify(obj)
+    });
+    const getResponse = await response.json();
+    console.log(getResponse);
+    getDepartmentAndRoomType();
+
+
   });
 }
+async function getDepartmentAndRoomType(){
+  const response = await fetch("http://localhost:8080/get-category", {
+    method : "GET",
+    header : {
+      "Content-Type" : "application/json"
+    }
+  })
+  const roomResponse = await fetch("http://localhost:8080/get-rooms", {
+    method : "GET",
+    header : {
+      "Content-Type" : "application/json"
+    }
+  })
+
+  
+  let departmentAndYear = await response.json();
+  let departmentHTML = ``
+  departmentAndYear.forEach((dandy)=>{
+    console.log(dandy);
+    let values = dandy.category.split("-");
+    const clg = values[0];
+    const department = values[1];
+    const year = values[2];
+    departmentHTML += `<option value="${department}" selected>
+                        ${department}
+                      </option>`;
+    
+    
+
+  })
+  const selectForm = document.querySelector(".js-department");
+  selectForm.innerHTML = departmentHTML;
+
+  let rooms = await roomResponse.json();
+  roomHTML = ``
+  rooms.forEach((room)=>{
+    roomType = room.roomType;
+    roomHTML += `<option value="${roomType}">${roomType}</option>`
+  })
+  const selectRoom = document.querySelector(".js-allot-room-type")
+  selectRoom.innerHTML = roomHTML;
+  const selectRoomInForm = document.querySelector(".js-room")
+  selectRoomInForm.innerHTML = roomHTML;
+
+}
+getDepartmentAndRoomType();
+sendRoomAndHostel();

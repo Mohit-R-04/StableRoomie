@@ -64,7 +64,7 @@ public class studentService {
 
         year = cdd.get(2);
 
-        clgDepartmentYear = clg + "+" + department + "+" + year;
+        clgDepartmentYear = clg + "-" + department + "-" + year;
 
         Pageable pageable = PageRequest.of(0, numStudents);
 

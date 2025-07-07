@@ -365,15 +365,6 @@
                       required
                       aria-required="true"
                     >
-                      <option value="CSE" selected>
-                        Computer Science & Engineering
-                      </option>
-                      <option value="ECE">Electronics & Communication</option>
-                      <option value="EEE">Electrical & Electronics</option>
-                      <option value="MECH">Mechanical Engineering</option>
-                      <option value="CIVIL">Civil Engineering</option>
-                      <option value="IT">Information Technology</option>
-                      <option value="BME">Biomedical Engineering</option>
                     </select>
                   </div>
                   <div class="form-group">
@@ -384,10 +375,12 @@
                       required
                       aria-required="true"
                     >
-                      <option value="2" selected>2nd Year</option>
-                      <option value="1">1st Year</option>
-                      <option value="3">3rd Year</option>
-                      <option value="4">4th Year</option>
+                      <option value="2nd" selected>2nd Year</option>
+                      <option value="1st">1st Year</option>
+                      <option value="3rd">3rd Year</option>
+                      <option value="4th">4th Year</option>
+                      <option value="5th">5th Year</option>
+
                     </select>
                   </div>
                 </div>
@@ -448,10 +441,7 @@
                     required
                     aria-required="true"
                   >
-                    <option value="double" selected>Double Sharing</option>
-                    <option value="single">Single Room</option>
-                    <option value="triple">Triple Sharing</option>
-                    <option value="quad">Quad Sharing</option>
+                    
                   </select>
                 </div>
 
@@ -665,19 +655,19 @@
     </div>
 
     <!-- Add Room Type Form -->
-    <form action="/add-room-type" method="post" class="add-room-type-form" style="margin-top: 20px;">
+    <form class="add-room-type-form" style="margin-top: 20px;">
       <h4>Add New Room Type</h4>
 
       <div class="form-group">
         <label for="newRoomType">Hostel Name</label>
-        <input class="js-getHostel" type="text" id="newRoomType" name="roomType" placeholder="e.g., GH-9 ..." required />
+        <input class="js-getHostel form-select" type="text" id="newRoomType" name="roomType" placeholder="e.g., GH-9 ..." required />
       </div>
       <div class="form-group">
         <label for="newRoomNo">Room Type</label>
-        <input class="js-getRoomNo" type="text" id="newRoomNo" name="roomNo" placeholder="e.g., no of persons in a room" required />
+        <input class="js-getRoomNo form-select" type="text" id="newRoomNo" name="roomNo" placeholder="e.g., no of persons in a room" required />
       </div>
 
-      <button class="btn primary js-add-button" type="submit">Add </button>
+      <button class="btn primary js-add-button">Add </button>
     </form>
   </div>
 </div>
@@ -712,12 +702,9 @@
                 <div id="allotment-form">
                   <div class="form-group">
                     <label for="allot-room-type">Room Type</label>
-                    <select id="allot-room-type" class="form-select">
+                    <select id="allot-room-type" class="form-select js-allot-room-type">
                       <option value="">Select room type</option>
-                      <option value="single">Single Room</option>
-                      <option value="double">Double Sharing</option>
-                      <option value="triple">Triple Sharing</option>
-                      <option value="quad">Quad Sharing</option>
+                      
                     </select>
                   </div>
                   <div class="form-group">
