@@ -459,3 +459,9 @@ async function getDepartmentAndRoomType() {
 }
 getDepartmentAndRoomType();
 sendRoomAndHostel();
+
+function handleLoginWithAccountChooser() {
+  // Force Google to show account chooser
+  const googleAuthUrl = "/oauth2/authorization/google?prompt=select_account";
+  window.location.href = googleAuthUrl;
+}

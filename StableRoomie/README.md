@@ -1,5 +1,7 @@
 # StableRoomie - Roommate Matching System
 
+mvn spring-boot:run
+
 A Spring Boot application for matching roommates at SSN College of Engineering.
 
 ## Setup Instructions
