@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Roommate Harmony - SSN College</title>
-    <link rel="stylesheet" href="../static/styles.css" />
+    <link rel="stylesheet" href="/styles.css" />
     <link
       href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"
       rel="stylesheet"
@@ -28,7 +28,7 @@
           <div class="header-content">
             <div class="logo-section">
               <img
-                src="../static/src/ssn_logo.png"
+                src="/src/ssn_logo.png"
                 alt="SSN Logo"
                 class="logo"
               />
@@ -66,7 +66,7 @@
                 <p>Sign in with your SSN Google account to get started</p>
               </div>
               <div class="card-content">
-                <button class="button" onclick="handleLogin()">
+                <button class="button" onclick="window.location.href='/oauth2/authorization/google'">
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
                     preserveAspectRatio="xMidYMid"
@@ -139,7 +139,7 @@
           <div class="header-content">
             <div class="logo-section">
               <img
-                src="../static/src/ssn_logo.png"
+                src="/src/ssn_logo.png"
                 alt="SSN Logo"
                 class="logo"
               />
@@ -155,7 +155,7 @@
                 <span class="sun-icon">☀️</span>
                 <span class="moon-icon">🌙</span>
               </label>
-              <a href="#landing" class="logout-btn" onclick="showLanding()"
+              <a href="#" class="logout-btn" onclick="handleLogout()"
                 >Logout</a
               >
             </div>
@@ -567,7 +567,7 @@
           <div class="header-content">
             <div class="logo-section">
               <img
-                src="../static/src/ssn_logo.png"
+                src="/src/ssn_logo.png"
                 alt="SSN Logo"
                 class="logo"
               />
@@ -583,7 +583,7 @@
                 <span class="sun-icon">☀️</span>
                 <span class="moon-icon">🌙</span>
               </label>
-              <a href="#landing" class="logout-btn" onclick="showLanding()"
+              <a href="#" class="logout-btn" onclick="handleLogout()"
                 >Logout</a
               >
             </div>
@@ -727,7 +727,13 @@
         </div>
       </main>
     </div>
+    <script>
+      // Check for error parameter and show popup
+      if (window.location.search.includes('error=domain')) {
+        alert('Please use an @ssn.edu.in email address to login.');
+      }
+    </script>
     <script>console.log("hello")</script>
-    <script src="../scripts/allotment.js"></script>
+    <script src="/scripts/allotment.js"></script>
   </body>
 </html>

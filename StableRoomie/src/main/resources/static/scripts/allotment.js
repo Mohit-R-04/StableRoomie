@@ -96,30 +96,6 @@ function allotRooms() {
     });
 }
 
-function handleLogin() {
-  // Prompt for email and handle null case
-  const email = prompt("Enter email (use @ssn.admin.edu.in for admin):");
-
-  // Check if user clicked Cancel
-  if (!email) {
-    return; // Exit function if user cancelled
-  }
-
-  const isAdmin = email.endsWith("@ssn.admin.edu.in");
-
-  // Remove active class from all pages
-  document
-    .querySelectorAll(".page")
-    .forEach((page) => page.classList.remove("active"));
-
-  // Show appropriate dashboard
-  if (isAdmin) {
-    document.getElementById("admin-dashboard-page").classList.add("active");
-  } else {
-    document.getElementById("dashboard-page").classList.add("active");
-  }
-}
-
 function showDashboard() {
   document
     .querySelectorAll(".page")
@@ -132,6 +108,18 @@ function showLanding() {
     .querySelectorAll(".page")
     .forEach((page) => page.classList.remove("active"));
   document.getElementById("landing-page").classList.add("active");
+
+  // Clear any stored session data
+  clearSessionData();
+}
+
+// Function to handle logout
+function handleLogout() {
+  // Clear session data
+  clearSessionData();
+
+  // Redirect to logout endpoint
+  window.location.href = "/logout";
 }
 
 function showPreferences() {
@@ -211,11 +199,84 @@ async function showCategory() {
 }
 
 // Call this function when the page loads
-document.addEventListener("DOMContentLoaded", showCategory);
+document.addEventListener("DOMContentLoaded", function () {
+  showCategory();
+  checkUserRoleAndShowDashboard();
+});
 
 // Call this function after adding, editing, or removing a category
 function refreshCategories() {
   showCategory();
+}
+
+// Function to check user role and show appropriate dashboard
+async function checkUserRoleAndShowDashboard() {
+  try {
+    // Check if user is authenticated by trying to access user info
+    const response = await fetch("/api/user-info", {
+      method: "GET",
+      credentials: "include",
+    });
+
+    if (response.ok) {
+      const userInfo = await response.json();
+      console.log("User info:", userInfo);
+
+      if (userInfo.authenticated) {
+        const role = userInfo.role;
+        console.log("User role:", role);
+
+        // Store user info in session storage for cross-tab communication
+        sessionStorage.setItem("userRole", role);
+        sessionStorage.setItem("userEmail", userInfo.email);
+        sessionStorage.setItem("isAuthenticated", "true");
+
+        if (role === "ADMIN") {
+          showAdminDashboard();
+        } else if (role === "STUDENT") {
+          showStudentDashboard();
+        } else {
+          showLanding();
+        }
+      } else {
+        // User not authenticated, clear session and show landing page
+        clearSessionData();
+        showLanding();
+      }
+    } else {
+      // User not authenticated, clear session and show landing page
+      clearSessionData();
+      showLanding();
+    }
+  } catch (error) {
+    console.error("Error checking user role:", error);
+    // On error, clear session and show landing page
+    clearSessionData();
+    showLanding();
+  }
+}
+
+// Function to clear session data
+function clearSessionData() {
+  sessionStorage.removeItem("userRole");
+  sessionStorage.removeItem("userEmail");
+  sessionStorage.removeItem("isAuthenticated");
+  localStorage.removeItem("userRole");
+  localStorage.removeItem("userEmail");
+}
+
+function showAdminDashboard() {
+  document
+    .querySelectorAll(".page")
+    .forEach((page) => page.classList.remove("active"));
+  document.getElementById("admin-dashboard-page").classList.add("active");
+}
+
+function showStudentDashboard() {
+  document
+    .querySelectorAll(".page")
+    .forEach((page) => page.classList.remove("active"));
+  document.getElementById("dashboard-page").classList.add("active");
 }
 async function addCategory() {
   const clg = document.getElementById("category-college").value;
@@ -338,44 +399,41 @@ function attachModalClose() {
 }
 function sendRoomAndHostel() {
   const addButton = document.querySelector(".js-add-button");
-  addButton.addEventListener("click", async(event) => {
+  addButton.addEventListener("click", async (event) => {
     event.preventDefault();
     const name = document.querySelector(".js-getHostel").value;
     const no = document.querySelector(".js-getRoomNo").value;
     obj = { name, no: Number(no) };
-    
+
     const response = await fetch("http://localhost:8080/room-details", {
-      method : "POST",
-      headers : {
-        "Content-Type" : "application/json"
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
       },
-      body : JSON.stringify(obj)
+      body: JSON.stringify(obj),
     });
     const getResponse = await response.json();
     console.log(getResponse);
     getDepartmentAndRoomType();
-
-
   });
 }
-async function getDepartmentAndRoomType(){
+async function getDepartmentAndRoomType() {
   const response = await fetch("http://localhost:8080/get-category", {
-    method : "GET",
-    header : {
-      "Content-Type" : "application/json"
-    }
-  })
+    method: "GET",
+    header: {
+      "Content-Type": "application/json",
+    },
+  });
   const roomResponse = await fetch("http://localhost:8080/get-rooms", {
-    method : "GET",
-    header : {
-      "Content-Type" : "application/json"
-    }
-  })
+    method: "GET",
+    header: {
+      "Content-Type": "application/json",
+    },
+  });
 
-  
   let departmentAndYear = await response.json();
-  let departmentHTML = ``
-  departmentAndYear.forEach((dandy)=>{
+  let departmentHTML = ``;
+  departmentAndYear.forEach((dandy) => {
     console.log(dandy);
     let values = dandy.category.split("-");
     const clg = values[0];
@@ -384,24 +442,20 @@ async function getDepartmentAndRoomType(){
     departmentHTML += `<option value="${department}" selected>
                         ${department}
                       </option>`;
-    
-    
-
-  })
+  });
   const selectForm = document.querySelector(".js-department");
   selectForm.innerHTML = departmentHTML;
 
   let rooms = await roomResponse.json();
-  roomHTML = ``
-  rooms.forEach((room)=>{
+  roomHTML = ``;
+  rooms.forEach((room) => {
     roomType = room.roomType;
-    roomHTML += `<option value="${roomType}">${roomType}</option>`
-  })
-  const selectRoom = document.querySelector(".js-allot-room-type")
+    roomHTML += `<option value="${roomType}">${roomType}</option>`;
+  });
+  const selectRoom = document.querySelector(".js-allot-room-type");
   selectRoom.innerHTML = roomHTML;
-  const selectRoomInForm = document.querySelector(".js-room")
+  const selectRoomInForm = document.querySelector(".js-room");
   selectRoomInForm.innerHTML = roomHTML;
-
 }
 getDepartmentAndRoomType();
 sendRoomAndHostel();
