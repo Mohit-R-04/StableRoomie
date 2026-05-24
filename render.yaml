@@ -3,7 +3,8 @@ services:
   - type: web
     name: stableroomie-backend
     env: docker
-    dockerFilePath: StableRoomie/Dockerfile
+    dockerfilePath: StableRoomie/Dockerfile
+    dockerContext: StableRoomie
     plan: free
     envVars:
       - key: DB_URL
@@ -23,7 +24,8 @@ services:
   - type: web
     name: stableroomie-flask
     env: docker
-    dockerFilePath: flask-api/Dockerfile
+    dockerfilePath: flask-api/Dockerfile
+    dockerContext: flask-api
     plan: free
     envVars:
       - key: JAVA_BACKEND_URL
