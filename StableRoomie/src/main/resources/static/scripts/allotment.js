@@ -373,7 +373,7 @@ async function showCategoryForm() {
   // Clear existing options except the placeholder
   categorySelect.innerHTML = '<option value="">Select Category</option>';
   try {
-    const response = await fetch("http://localhost:8080/get-category");
+    const response = await fetch("/get-category");
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }

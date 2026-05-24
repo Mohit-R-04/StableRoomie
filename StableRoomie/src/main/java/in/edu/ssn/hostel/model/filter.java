@@ -14,4 +14,9 @@ public class filter {
     private String roomType;
     private String numStudents;
 
+    // Explicit getters
+    public String getLocation() { return location; }
+    public String getCategory() { return category; }
+    public String getRoomType() { return roomType; }
+    public String getNumStudents() { return numStudents; }
 }

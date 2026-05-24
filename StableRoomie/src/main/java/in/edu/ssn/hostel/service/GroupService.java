@@ -28,13 +28,13 @@ public class GroupService {
         }
 
         for (Map<String, Integer> group : groups) {
-            int student_1 = (int) group.get("student_1");
-            int student_2 = (int) group.get("students_2");
-            int student_3 = (int) group.get("student_3");
+            int student1 = (int) group.get("student_1");
+            int student2 = (int) group.get("students_2");
+            int student3 = (int) group.get("student_3");
             Groups groupIt = new Groups();
-            groupIt.setStudent_1(student_1);
-            groupIt.setStudent_2(student_2);
-            groupIt.setStudent_3(student_3);
+            groupIt.setStudent1(student1);
+            groupIt.setStudent2(student2);
+            groupIt.setStudent3(student3);
             groupIt.setRoomId(roomid.get());
             grepo.save(groupIt);
         }

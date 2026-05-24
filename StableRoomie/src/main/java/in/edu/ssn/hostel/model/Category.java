@@ -28,4 +28,6 @@ public class Category {
     private int id;
     private String category;
 
+    // Explicit setter
+    public void setCategory(String category) { this.category = category; }
 }

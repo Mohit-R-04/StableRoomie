@@ -19,7 +19,7 @@ import jakarta.servlet.http.HttpSession;
 @Controller
 public class LoginController {
 
-    @GetMapping("/login")
+    @GetMapping({"/", "/login"})
     public String loginPage() {
         // Serve the custom login page (index.html in templates)
         return "index";
