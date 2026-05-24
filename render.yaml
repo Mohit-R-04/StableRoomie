@@ -7,20 +7,17 @@ services:
     plan: free
     envVars:
       - key: DB_URL
-        value: jdbc:postgresql://${{db.host}}:5432/${{db.database}}
+        value: jdbc:postgresql://${{db.host}}:${{db.port}}/${{db.database}}
       - key: DB_USERNAME
         value: ${{db.user}}
       - key: DB_PASSWORD
         value: ${{db.password}}
       - key: GOOGLE_CLIENT_ID
-        sync: false # Render will prompt you for this value during setup
+        sync: false
       - key: GOOGLE_CLIENT_SECRET
-        sync: false # Render will prompt you for this value during setup
+        sync: false
       - key: FLASK_API_URL
-        fromService:
-          name: stableroomie-flask
-          type: web
-          property: host
+        value: http://${{stableroomie-flask.host}}
 
   # 2. Flask Microservice
   - type: web
@@ -30,13 +27,8 @@ services:
     plan: free
     envVars:
       - key: JAVA_BACKEND_URL
-        fromService:
-          name: stableroomie-backend
-          type: web
-          property: host
+        value: http://${{stableroomie-backend.host}}
 
 databases:
   - name: db
-    plan: free
     databaseName: stableromie
-    user: mohitreddy
