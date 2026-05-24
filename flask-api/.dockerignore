@@ -1,0 +1,14 @@
+venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+.env
+*.log
+.git
+.gitignore
+model/__pycache__/
+service/__pycache__/
+flask_run.log
+app_temp.py
