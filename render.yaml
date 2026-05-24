@@ -1,0 +1,42 @@
+services:
+  # 1. Java Spring Boot Backend
+  - type: web
+    name: stableroomie-backend
+    env: docker
+    dockerFilePath: StableRoomie/Dockerfile
+    plan: free
+    envVars:
+      - key: DB_URL
+        value: jdbc:postgresql://${{db.host}}:5432/${{db.database}}
+      - key: DB_USERNAME
+        value: ${{db.user}}
+      - key: DB_PASSWORD
+        value: ${{db.password}}
+      - key: GOOGLE_CLIENT_ID
+        sync: false # Render will prompt you for this value during setup
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false # Render will prompt you for this value during setup
+      - key: FLASK_API_URL
+        fromService:
+          name: stableroomie-flask
+          type: web
+          property: host
+
+  # 2. Flask Microservice
+  - type: web
+    name: stableroomie-flask
+    env: docker
+    dockerFilePath: flask-api/Dockerfile
+    plan: free
+    envVars:
+      - key: JAVA_BACKEND_URL
+        fromService:
+          name: stableroomie-backend
+          type: web
+          property: host
+
+databases:
+  - name: db
+    plan: free
+    databaseName: stableromie
+    user: mohitreddy
