@@ -12,7 +12,7 @@ services:
       - key: GOOGLE_CLIENT_SECRET
         sync: false # Render will prompt you for this value during setup
       - key: FLASK_API_URL
-        value: http://${{stableroomie-flask.host}}
+        value: http://stableroomie-flask:5000
 
   # 2. Flask Microservice
   - type: web
@@ -23,4 +23,4 @@ services:
     plan: free
     envVars:
       - key: JAVA_BACKEND_URL
-        value: http://${{stableroomie-backend.host}}
+        value: http://stableroomie-backend:8080
