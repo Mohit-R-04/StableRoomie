@@ -1,7 +1,7 @@
 services:
   # 1. Java Spring Boot Backend
   - type: web
-    name: stableroomie-backend
+    name: stableroomie
     env: docker
     dockerfilePath: StableRoomie/Dockerfile
     dockerContext: StableRoomie
@@ -23,4 +23,4 @@ services:
     plan: free
     envVars:
       - key: JAVA_BACKEND_URL
-        value: http://stableroomie-backend:8080
+        value: http://stableroomie:8080
