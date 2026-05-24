@@ -7,12 +7,6 @@ services:
     dockerContext: StableRoomie
     plan: free
     envVars:
-      - key: DB_URL
-        sync: false # Render will prompt you for this value during setup
-      - key: DB_USERNAME
-        sync: false # Render will prompt you for this value during setup
-      - key: DB_PASSWORD
-        sync: false # Render will prompt you for this value during setup
       - key: GOOGLE_CLIENT_ID
         sync: false # Render will prompt you for this value during setup
       - key: GOOGLE_CLIENT_SECRET
