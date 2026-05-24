@@ -46,4 +46,9 @@ public class SecurityConfig {
     public OAuth2UserService<OAuth2UserRequest, OAuth2User> customOAuth2UserService() {
         return new CustomOAuth2UserService();
     }
+
+    @Bean
+    public org.springframework.web.client.RestTemplate restTemplate() {
+        return new org.springframework.web.client.RestTemplate();
+    }
 }

@@ -4,12 +4,15 @@ import itertools
 from flask_cors import CORS
 import requests
 import json
+import os
 
 import model.students as student
 import service.allot as allot
 
 app = Flask(__name__)
 CORS(app)
+
+java_backend_url = os.environ.get("JAVA_BACKEND_URL", "http://localhost:8080")
 
 @app.route('/allot_roommates', methods=['POST'])
 def allot_roommates():
@@ -26,7 +29,7 @@ def allot_roommates():
 
 
     # Make the POST request to the Java backend
-    response = requests.post("http://localhost:8080/getStudents", json=request_data, headers=headers)
+    response = requests.post(f"{java_backend_url}/getStudents", json=request_data, headers=headers)
 
     print("Response Status Code:", response.status_code)
     print("Response Text:", response.text)
@@ -64,7 +67,7 @@ def allot_roommates():
             formGroup = {"student_1": group[0], "students_2": group[1], "student_3": group[2]}
             payload["groups"].append(formGroup)
         print(payload)
-        response = requests.post("http://localhost:8080/save-groups", json=payload, headers=headers)
+        response = requests.post(f"{java_backend_url}/save-groups", json=payload, headers=headers)
         print(response)
         print(allotment)
         return jsonify({"message": "Allotment Successful"})

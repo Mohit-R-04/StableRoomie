@@ -48,7 +48,7 @@ document
     };
 
     try {
-      const response = await fetch("http://localhost:8080/saveStudents", {
+      const response = await fetch("/saveStudents", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -79,7 +79,7 @@ function allotRooms() {
     return false;
   }
 
-  fetch("http://127.0.0.1:5000/allot_roommates", {
+  fetch("/allot_roommates", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -162,7 +162,7 @@ function showAddCategoryModal() {
 
 async function showCategory() {
   try {
-    const response = await fetch("http://localhost:8080/get-category");
+    const response = await fetch("/get-category");
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
@@ -290,7 +290,7 @@ async function addCategory() {
   }
 
   console.log(category);
-  const request = await fetch("http://localhost:8080/save-category", {
+  const request = await fetch("/save-category", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -405,7 +405,7 @@ function sendRoomAndHostel() {
     const no = document.querySelector(".js-getRoomNo").value;
     obj = { name, no: Number(no) };
 
-    const response = await fetch("http://localhost:8080/room-details", {
+    const response = await fetch("/room-details", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -418,13 +418,13 @@ function sendRoomAndHostel() {
   });
 }
 async function getDepartmentAndRoomType() {
-  const response = await fetch("http://localhost:8080/get-category", {
+  const response = await fetch("/get-category", {
     method: "GET",
     header: {
       "Content-Type": "application/json",
     },
   });
-  const roomResponse = await fetch("http://localhost:8080/get-rooms", {
+  const roomResponse = await fetch("/get-rooms", {
     method: "GET",
     header: {
       "Content-Type": "application/json",

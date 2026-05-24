@@ -6,7 +6,7 @@
     <title>Roommate Harmony - SSN College</title>
     <link rel="stylesheet" href="/styles.css" />
     <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Poppins:wght@400;500;600;700&display=swap"
       rel="stylesheet"
     />
   </head>
@@ -97,7 +97,7 @@
                   <span class="text">Continue with Google</span>
                 </button>
                 <p class="login-note">
-                  Only @ssn.edu.in or @ssn.admin.edu.in accounts are allowed
+                  Sign in with your Google account to get started
                 </p>
               </div>
             </div>
@@ -729,8 +729,8 @@
     </div>
     <script>
       // Check for error parameter and show popup
-      if (window.location.search.includes('error=domain')) {
-        alert('Please use an @ssn.edu.in email address to login.');
+      if (window.location.search.includes('error=')) {
+        alert('Authentication failed. Please try again.');
       }
     </script>
     <script>console.log("hello")</script>

@@ -1,0 +1,52 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:14-alpine
+    container_name: stableroomie-db
+    environment:
+      POSTGRES_DB: stableromie
+      POSTGRES_USER: mohitreddy
+      POSTGRES_PASSWORD: password
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U mohitreddy -d stableromie"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  java-backend:
+    build:
+      context: ./StableRoomie
+      dockerfile: Dockerfile
+    container_name: stableroomie-java
+    ports:
+      - "8080:8080"
+    environment:
+      - DB_URL=jdbc:postgresql://db:5432/stableromie
+      - DB_USERNAME=mohitreddy
+      - DB_PASSWORD=password
+      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
+      - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
+      - FLASK_API_URL=http://flask-api:5000
+    depends_on:
+      db:
+        condition: service_healthy
+
+  flask-api:
+    build:
+      context: ./flask-api
+      dockerfile: Dockerfile
+    container_name: stableroomie-flask
+    ports:
+      - "5000:5000"
+    environment:
+      - JAVA_BACKEND_URL=http://java-backend:8080
+    depends_on:
+      - java-backend
+
+volumes:
+  pgdata:
