@@ -30,7 +30,7 @@ public class Student {
     @Column(name = "sleep_time")
     private String sleepTime;
 
-    @Column(name = "year")
+    @Column(name = "student_year")
     private int year;
 
     @Column(name = "phone")
