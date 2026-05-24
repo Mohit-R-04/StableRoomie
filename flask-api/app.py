@@ -14,6 +14,14 @@ CORS(app)
 
 java_backend_url = os.environ.get("JAVA_BACKEND_URL", "http://localhost:8080")
 
+@app.route('/', methods=['GET'])
+def health():
+    return jsonify({"status": "ok"}), 200
+
+@app.route('/health', methods=['GET'])
+def health_check():
+    return jsonify({"status": "ok"}), 200
+
 @app.route('/allot_roommates', methods=['POST'])
 def allot_roommates():
     headers = {

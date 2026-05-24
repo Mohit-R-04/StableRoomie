@@ -6,6 +6,7 @@ services:
     dockerfilePath: StableRoomie/Dockerfile
     dockerContext: StableRoomie
     plan: free
+    healthCheckPath: /
     envVars:
       - key: GOOGLE_CLIENT_ID
         sync: false # Render will prompt you for this value during setup
@@ -21,6 +22,7 @@ services:
     dockerfilePath: flask-api/Dockerfile
     dockerContext: flask-api
     plan: free
+    healthCheckPath: /health
     envVars:
       - key: JAVA_BACKEND_URL
         value: http://stableroomie:8080
