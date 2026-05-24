@@ -8,15 +8,15 @@ services:
     plan: free
     envVars:
       - key: DB_URL
-        value: jdbc:postgresql://${{db.host}}:${{db.port}}/${{db.database}}
+        sync: false # Render will prompt you for this value during setup
       - key: DB_USERNAME
-        value: ${{db.user}}
+        sync: false # Render will prompt you for this value during setup
       - key: DB_PASSWORD
-        value: ${{db.password}}
+        sync: false # Render will prompt you for this value during setup
       - key: GOOGLE_CLIENT_ID
-        sync: false
+        sync: false # Render will prompt you for this value during setup
       - key: GOOGLE_CLIENT_SECRET
-        sync: false
+        sync: false # Render will prompt you for this value during setup
       - key: FLASK_API_URL
         value: http://${{stableroomie-flask.host}}
 
@@ -30,7 +30,3 @@ services:
     envVars:
       - key: JAVA_BACKEND_URL
         value: http://${{stableroomie-backend.host}}
-
-databases:
-  - name: db
-    databaseName: stableromie
