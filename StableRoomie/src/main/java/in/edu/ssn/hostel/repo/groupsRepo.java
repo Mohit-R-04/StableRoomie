@@ -9,7 +9,7 @@ import org.springframework.stereotype.Repository;
 import java.util.Optional;
 @Repository
 public interface groupsRepo extends JpaRepository<Groups, Long> {
-    @Query("SELECT r.id FROM Rooms r WHERE r.roomType = :roomParam")
+    @Query("SELECT r.roomId FROM Rooms r WHERE r.roomType = :roomParam")
     Optional<Long> findFirstAvailableRoomId(@Param("roomParam") String roomType);
 }
 

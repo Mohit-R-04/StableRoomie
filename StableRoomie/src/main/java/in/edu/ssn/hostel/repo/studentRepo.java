@@ -14,7 +14,7 @@ import in.edu.ssn.hostel.model.Student;
 public interface studentRepo extends JpaRepository<Student, Integer> {
 
     @Query("SELECT s FROM Student s WHERE "
-            + "(:category IS NULL OR LOWER(CONCAT(s.clg, '+', s.department, '+', CAST(s.year AS string))) = LOWER(:category)) AND "
+            + "(:category IS NULL OR LOWER(CONCAT(s.clg, '-', s.department, '-', s.year)) = LOWER(:category)) AND "
             + "(:roomType IS NULL OR LOWER(s.roomType) = LOWER(:roomType)) "
             + "ORDER BY s.submittedTime ASC")
     List<Student> findByCategoryAndRoomType(
@@ -24,7 +24,7 @@ public interface studentRepo extends JpaRepository<Student, Integer> {
 
     @Query("SELECT s FROM Student s WHERE "
             + "(:location IS NULL OR LOWER(s.location) = LOWER(:location)) AND "
-            + "(:category IS NULL OR LOWER(CONCAT(s.clg, '+', s.department, '+', CAST(s.year AS string))) = LOWER(:category)) AND "
+            + "(:category IS NULL OR LOWER(CONCAT(s.clg, '-', s.department, '-', s.year)) = LOWER(:category)) AND "
             + "(:roomType IS NULL OR LOWER(s.roomType) = LOWER(:roomType)) "
             + "ORDER BY s.submittedTime ASC")
     List<Student> findByLocationAndCategoryAndRoomType(

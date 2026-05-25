@@ -70,9 +70,13 @@ def allot_roommates():
         allotment, roomType = allot.allotment(students)
         print(allotment)
         print(roomType)
-        payload = {"groups":[], "roomType": roomType}
+        payload = {"groups": [], "roomType": roomType}
         for group in allotment:
-            formGroup = {"student_1": group[0], "students_2": group[1], "student_3": group[2]}
+            formGroup = {
+                "student_1": group[0] if len(group) > 0 else 0,
+                "students_2": group[1] if len(group) > 1 else 0,
+                "student_3": group[2] if len(group) > 2 else 0,
+            }
             payload["groups"].append(formGroup)
         print(payload)
         response = requests.post(f"{java_backend_url}/save-groups", json=payload, headers=headers)
