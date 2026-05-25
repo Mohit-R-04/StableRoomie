@@ -42,4 +42,15 @@ public class groupsController {
             return ResponseEntity.status(500).body("{\"message\": \"" + e.getMessage() + "\"}");
         }
     }
+
+    @org.springframework.web.bind.annotation.GetMapping("/test-flask-health")
+    public ResponseEntity<String> testFlaskHealth() {
+        String url = flaskApiUrl + "/health";
+        try {
+            ResponseEntity<String> response = restTemplate.getForEntity(url, String.class);
+            return ResponseEntity.ok("Flask is healthy! Response: " + response.getBody());
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body("Failed to reach Flask at " + url + ". Error: " + e.getMessage());
+        }
+    }
 }

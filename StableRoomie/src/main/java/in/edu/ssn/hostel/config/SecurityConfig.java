@@ -21,7 +21,7 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable()) // Disable CSRF for OAuth2
                 .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/", "/login", "/api/user-info", "/error", "/favicon.ico",
-                        "/styles.css", "/scripts/**", "/src/**").permitAll()
+                        "/styles.css", "/scripts/**", "/src/**", "/test-flask-health").permitAll()
                 .anyRequest().authenticated()
                 )
                 .oauth2Login(oauth -> oauth
