@@ -28,4 +28,8 @@ public class roomService {
     public List<Rooms> getRooms() {
         return repo.findAll();
     }
+
+    public void deleteRoom(Long id) {
+        repo.deleteById(id);
+    }
 }

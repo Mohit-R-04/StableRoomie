@@ -19,9 +19,15 @@ public class roomsController {
     public ResponseEntity<Rooms> saveRooms(@RequestBody Map<String, Object> hostelAndRooms){
         return ResponseEntity.ok(room.saveRoom(hostelAndRooms));
     }
+
     @GetMapping("/get-rooms")
     public List<Rooms> getRooms(){
         return room.getRooms();
+    }
 
+    @DeleteMapping("/remove-room/{id}")
+    public ResponseEntity<Void> removeRoom(@PathVariable Long id) {
+        room.deleteRoom(id);
+        return ResponseEntity.ok().build();
     }
 }

@@ -201,7 +201,9 @@ async function showCategory() {
 // Call this function when the page loads
 document.addEventListener("DOMContentLoaded", function () {
   showCategory();
+  showRooms();
   checkUserRoleAndShowDashboard();
+  sendRoomAndHostel();
 });
 
 // Call this function after adding, editing, or removing a category
@@ -414,68 +416,113 @@ function attachModalClose() {
     modal.remove();
   });
 }
+// Show rooms dynamically in the admin panel and refresh all room-type dropdowns
+async function showRooms() {
+  try {
+    const response = await fetch("/get-rooms");
+    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+    const rooms = await response.json();
+
+    // Populate admin room-type list
+    const roomList = document.getElementById("room-type-list");
+    if (roomList) {
+      roomList.innerHTML = "";
+      if (rooms.length === 0) {
+        roomList.innerHTML = '<div class="error-message">No room types added yet.</div>';
+      } else {
+        rooms.forEach((room) => {
+          const item = document.createElement("div");
+          item.className = "room-type-item";
+          item.innerHTML = `
+            <span><strong>${room.roomType}</strong> (${room.noOfStudents} persons)</span>
+            <div class="room-type-actions">
+              <button class="btn secondary small remove" onclick="removeRoom(${room.roomId})">Remove</button>
+            </div>
+          `;
+          roomList.appendChild(item);
+        });
+      }
+    }
+
+    // Populate room-type dropdowns (student form + allot form)
+    let roomHTML = "";
+    rooms.forEach((room) => {
+      roomHTML += `<option value="${room.roomType}">${room.roomType} (${room.noOfStudents}-sharing)</option>`;
+    });
+
+    const studentRoomSelect = document.querySelector(".js-room");
+    if (studentRoomSelect) studentRoomSelect.innerHTML = roomHTML || '<option value="">No room types available</option>';
+
+    const allotRoomSelect = document.querySelector(".js-allot-room-type");
+    if (allotRoomSelect) allotRoomSelect.innerHTML = roomHTML || '<option value="">No room types available</option>';
+
+  } catch (error) {
+    console.error("Error loading rooms:", error);
+  }
+}
+
+async function removeRoom(id) {
+  try {
+    const response = await fetch(`/remove-room/${id}`, { method: "DELETE" });
+    if (!response.ok) throw new Error(`Failed to delete room: ${response.status}`);
+    showRooms();
+  } catch (error) {
+    console.error("Error removing room:", error);
+    alert("Failed to remove room type. Please try again.");
+  }
+}
+
+// Populate department dropdown from categories
+async function getDepartmentFromCategories() {
+  try {
+    const response = await fetch("/get-category");
+    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+    const categories = await response.json();
+    let departmentHTML = "";
+    categories.forEach((cat) => {
+      const values = cat.category.split("-");
+      const department = values[1] || cat.category;
+      departmentHTML += `<option value="${department}">${department}</option>`;
+    });
+    const selectForm = document.querySelector(".js-department");
+    if (selectForm) selectForm.innerHTML = departmentHTML || '<option value="">No categories added yet</option>';
+  } catch (error) {
+    console.error("Error loading departments:", error);
+  }
+}
+
 function sendRoomAndHostel() {
   const addButton = document.querySelector(".js-add-button");
+  if (!addButton) return;
   addButton.addEventListener("click", async (event) => {
     event.preventDefault();
     const name = document.querySelector(".js-getHostel").value;
     const no = document.querySelector(".js-getRoomNo").value;
-    obj = { name, no: Number(no) };
+    if (!name || !no) {
+      alert("Please fill hostel name and number of persons.");
+      return;
+    }
+    const obj = { name, no: Number(no) };
 
-    const response = await fetch("/room-details", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(obj),
-    });
-    const getResponse = await response.json();
-    console.log(getResponse);
-    getDepartmentAndRoomType();
+    try {
+      const response = await fetch("/room-details", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(obj),
+      });
+      const getResponse = await response.json();
+      console.log(getResponse);
+      // Clear inputs
+      document.querySelector(".js-getHostel").value = "";
+      document.querySelector(".js-getRoomNo").value = "";
+      // Refresh lists
+      showRooms();
+    } catch (error) {
+      console.error("Error adding room:", error);
+      alert("Failed to add room type.");
+    }
   });
 }
-async function getDepartmentAndRoomType() {
-  const response = await fetch("/get-category", {
-    method: "GET",
-    header: {
-      "Content-Type": "application/json",
-    },
-  });
-  const roomResponse = await fetch("/get-rooms", {
-    method: "GET",
-    header: {
-      "Content-Type": "application/json",
-    },
-  });
-
-  let departmentAndYear = await response.json();
-  let departmentHTML = ``;
-  departmentAndYear.forEach((dandy) => {
-    console.log(dandy);
-    let values = dandy.category.split("-");
-    const clg = values[0];
-    const department = values[1];
-    const year = values[2];
-    departmentHTML += `<option value="${department}" selected>
-                        ${department}
-                      </option>`;
-  });
-  const selectForm = document.querySelector(".js-department");
-  selectForm.innerHTML = departmentHTML;
-
-  let rooms = await roomResponse.json();
-  roomHTML = ``;
-  rooms.forEach((room) => {
-    roomType = room.roomType;
-    roomHTML += `<option value="${roomType}">${roomType}</option>`;
-  });
-  const selectRoom = document.querySelector(".js-allot-room-type");
-  selectRoom.innerHTML = roomHTML;
-  const selectRoomInForm = document.querySelector(".js-room");
-  selectRoomInForm.innerHTML = roomHTML;
-}
-getDepartmentAndRoomType();
-sendRoomAndHostel();
 
 function handleLoginWithAccountChooser() {
   // Force Google to show account chooser

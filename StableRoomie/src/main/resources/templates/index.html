@@ -618,39 +618,13 @@
   </div>
 
   <div class="card-content">
-    <!-- Room Type List -->
-    <div class="room-type-list">
-      <div class="room-type-item">
-        <span><strong>Single Room</strong></span>
-        <div class="room-type-actions">
-          <form action="/edit-room-type" method="post" style="display: inline;">
-            <input type="hidden" name="roomType" value="Single Room" />
-            <button class="btn secondary small" type="submit">Edit</button>
-          </form>
-          <form action="/remove-room-type" method="post" style="display: inline;">
-            <input type="hidden" name="roomType" value="Single Room" />
-            <button class="btn secondary small remove" type="submit">Remove</button>
-          </form>
-        </div>
-      </div>
-
-      <div class="room-type-item">
-        <span><strong>Double Sharing</strong></span>
-        <div class="room-type-actions">
-          <form action="/edit-room-type" method="post" style="display: inline;">
-            <input type="hidden" name="roomType" value="Double Sharing" />
-            <button class="btn secondary small" type="submit">Edit</button>
-          </form>
-          <form action="/remove-room-type" method="post" style="display: inline;">
-            <input type="hidden" name="roomType" value="Double Sharing" />
-            <button class="btn secondary small remove" type="submit">Remove</button>
-          </form>
-        </div>
-      </div>
+    <!-- Room Type List (dynamically loaded) -->
+    <div id="room-type-list" class="room-type-list">
+      <!-- Rooms will be dynamically populated here -->
     </div>
 
     <!-- Add Room Type Form -->
-    <form class="add-room-type-form" style="margin-top: 20px;">
+    <form class="add-room-type-form" style="margin-top: 20px;" onsubmit="return false;">
       <h4>Add New Room Type</h4>
 
       <div class="form-group">
@@ -658,8 +632,8 @@
         <input class="js-getHostel form-select" type="text" id="newRoomType" name="roomType" placeholder="e.g., GH-9 ..." required />
       </div>
       <div class="form-group">
-        <label for="newRoomNo">Room Type</label>
-        <input class="js-getRoomNo form-select" type="text" id="newRoomNo" name="roomNo" placeholder="e.g., no of persons in a room" required />
+        <label for="newRoomNo">Number of Persons per Room</label>
+        <input class="js-getRoomNo form-select" type="text" id="newRoomNo" name="roomNo" placeholder="e.g., 3" required />
       </div>
 
       <button class="btn primary js-add-button">Add </button>
