@@ -31,7 +31,7 @@ public class Student {
     private String sleepTime;
 
     @Column(name = "student_year")
-    private int year;
+    private String year;
 
     @Column(name = "phone")
     private String phone;

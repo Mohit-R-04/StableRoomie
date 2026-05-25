@@ -8,7 +8,7 @@ document
     const sleep = document.querySelector(".js-sleep").value;
     const wake = document.querySelector(".js-wake").value;
     const department = document.querySelector(".js-department").value;
-    const year = Number(document.querySelector(".js-year").value);
+    const year = document.querySelector(".js-year").value;
     const phone = document.querySelector(".js-phone").value;
     const studentId = Number(document.querySelector(".js-studentId").value);
     const studyTime = document.querySelector(".js-study").value;
@@ -16,7 +16,7 @@ document
     const address = document.querySelector(".js-home").value;
     const emergencyContact = document.querySelector(".js-emergency").value;
     const roomMates = document.querySelector(".js-friends").value;
-    const studyHabbits = document.querySelector(".js-studyHabits").value; // Fix typo: use .js-studyHabits
+    const studyHabbits = document.querySelector(".js-studyHabbits").value;
     const clean = document.querySelector(".js-clean").value;
     const light = document.querySelector(".js-light").value;
     const noise = document.querySelector(".js-noise").value;
@@ -73,7 +73,7 @@ function allotRooms() {
   const category = document.getElementById("category").value;
   const roomType = document.getElementById("allot-room-type").value;
   const numStudents = document.getElementById("num-students").value;
-  const location = document.getElementById("location").value;
+  const location = document.getElementById("allot-location").value;
   if (!(location && category && roomType && numStudents)) {
     alert("Please fill all details");
     return false;
@@ -297,8 +297,25 @@ async function addCategory() {
     },
     body: JSON.stringify(category),
   });
-  console.log(request.json());
+  console.log(request.status);
+  refreshCategories();
 }
+
+async function removeCategory(id) {
+  try {
+    const response = await fetch(`/delete-category/${id}`, {
+      method: "DELETE",
+    });
+    if (!response.ok) {
+      throw new Error(`Failed to delete category: ${response.status}`);
+    }
+    refreshCategories();
+  } catch (error) {
+    console.error("Error removing category:", error);
+    alert("Failed to remove category. Please try again.");
+  }
+}
+
 
 function showEditCategoryModal() {
   const modalTemplate = document

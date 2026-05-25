@@ -24,4 +24,8 @@ public class categoryService {
     public List<Category> getCategory() {
         return repo.findAll();
     }
+
+    public void deleteCategory(Long id) {
+        repo.deleteById(id);
+    }
 }
