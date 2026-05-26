@@ -30,4 +30,15 @@ public class roomsController {
         room.deleteRoom(id);
         return ResponseEntity.ok().build();
     }
+
+    @PostMapping("/remove-room-type")
+    public void removeRoomTypeLegacy(@RequestParam("roomType") String roomType, jakarta.servlet.http.HttpServletResponse response) throws java.io.IOException {
+        room.deleteByRoomType(roomType);
+        response.sendRedirect("/admin/dashboard");
+    }
+
+    @PostMapping("/edit-room-type")
+    public void editRoomTypeLegacy(jakarta.servlet.http.HttpServletResponse response) throws java.io.IOException {
+        response.sendRedirect("/admin/dashboard");
+    }
 }

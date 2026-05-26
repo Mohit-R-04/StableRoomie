@@ -6,4 +6,5 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface roomRepo extends JpaRepository<Rooms, Long> {
+    java.util.List<Rooms> findByRoomType(String roomType);
 }
