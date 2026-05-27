@@ -5,12 +5,17 @@ from flask_cors import CORS
 import requests
 import json
 import os
+import logging
 
 import model.students as student
 import service.allot as allot
 
 app = Flask(__name__)
 CORS(app)
+
+# Configure logging for production
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 java_backend_url = os.environ.get("JAVA_BACKEND_URL", "http://localhost:8080")
 
@@ -33,14 +38,8 @@ def allot_roommates():
     except Exception as e:
         return jsonify({"message": f"Invalid request data: {str(e)}"}), 400
 
-    print("Request Data Sent:", request_data)
-
-
     # Make the POST request to the Java backend
     response = requests.post(f"{java_backend_url}/getStudents", json=request_data, headers=headers)
-
-    print("Response Status Code:", response.status_code)
-    print("Response Text:", response.text)
 
     if response.status_code != 200:
         return jsonify({
@@ -51,7 +50,6 @@ def allot_roommates():
     # Parse the response JSON
     try:
         students = response.json()
-        print("Parsed Students:", students)
     except requests.exceptions.JSONDecodeError as e:
         return jsonify({
             "message": f"Invalid JSON response: {str(e)}",
@@ -66,8 +64,6 @@ def allot_roommates():
     try:
         # Allot roommates using matching algorithm
         allotment, roomType = allot.allotment(students)
-        print("Allotment result:", allotment)
-        print("Room type:", roomType)
         
         # Build payload with only students that exist
         payload = {"groups": [], "roomType": roomType}
@@ -82,8 +78,6 @@ def allot_roommates():
             if formGroup:  # Only add non-empty groups
                 payload["groups"].append(formGroup)
         
-        print("Payload to save:", payload)
-        
         # Send groups to Java backend for persistence
         response = requests.post(f"{java_backend_url}/save-groups", json=payload, headers=headers)
         
@@ -93,11 +87,10 @@ def allot_roommates():
                 "response_text": response.text
             }), 500
         
-        print("Groups saved successfully")
         return jsonify({"message": "Allotment Successful"}), 200
     except Exception as e:
-        print(f"Error during allotment: {str(e)}")
+        logger.error(f"Error during allotment: {str(e)}")
         return jsonify({"message": f"Allotment failed: {str(e)}"}), 500
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=False, host='0.0.0.0', port=5000)
