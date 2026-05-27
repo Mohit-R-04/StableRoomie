@@ -28,13 +28,18 @@ public class GroupService {
         }
 
         for (Map<String, Integer> group : groups) {
-            int student1 = (int) group.get("student_1");
-            int student2 = (int) group.get("students_2");
-            int student3 = (int) group.get("student_3");
             Groups groupIt = new Groups();
-            groupIt.setStudent1(student1);
-            groupIt.setStudent2(student2);
-            groupIt.setStudent3(student3);
+            
+            if (group.containsKey("student_1")) {
+                groupIt.setStudent1((int) group.get("student_1"));
+            }
+            if (group.containsKey("student_2")) {
+                groupIt.setStudent2((int) group.get("student_2"));
+            }
+            if (group.containsKey("student_3")) {
+                groupIt.setStudent3((int) group.get("student_3"));
+            }
+            
             groupIt.setRoomId(roomid.get());
             grepo.save(groupIt);
         }

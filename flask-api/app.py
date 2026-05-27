@@ -64,27 +64,40 @@ def allot_roommates():
 
     # Perform the allotment
     try:
-        roomType = request_data.get("roomType")
-
-        # TODO: NEED TO CHANGE 
+        # Allot roommates using matching algorithm
         allotment, roomType = allot.allotment(students)
-        print(allotment)
-        print(roomType)
+        print("Allotment result:", allotment)
+        print("Room type:", roomType)
+        
+        # Build payload with only students that exist
         payload = {"groups": [], "roomType": roomType}
         for group in allotment:
-            formGroup = {
-                "student_1": group[0] if len(group) > 0 else 0,
-                "students_2": group[1] if len(group) > 1 else 0,
-                "student_3": group[2] if len(group) > 2 else 0,
-            }
-            payload["groups"].append(formGroup)
-        print(payload)
+            formGroup = {}
+            if len(group) > 0:
+                formGroup["student_1"] = group[0]
+            if len(group) > 1:
+                formGroup["student_2"] = group[1]
+            if len(group) > 2:
+                formGroup["student_3"] = group[2]
+            if formGroup:  # Only add non-empty groups
+                payload["groups"].append(formGroup)
+        
+        print("Payload to save:", payload)
+        
+        # Send groups to Java backend for persistence
         response = requests.post(f"{java_backend_url}/save-groups", json=payload, headers=headers)
-        print(response)
-        print(allotment)
-        return jsonify({"message": "Allotment Successful"})
-    except Exception as e:  # Fixed: Use Exception instead of sys.exception
-        return jsonify({"message": str(e)}), 500
+        
+        if response.status_code != 200:
+            return jsonify({
+                "message": f"Failed to save groups, status code: {response.status_code}",
+                "response_text": response.text
+            }), 500
+        
+        print("Groups saved successfully")
+        return jsonify({"message": "Allotment Successful"}), 200
+    except Exception as e:
+        print(f"Error during allotment: {str(e)}")
+        return jsonify({"message": f"Allotment failed: {str(e)}"}), 500
 
 if __name__ == '__main__':
     app.run(debug=True)

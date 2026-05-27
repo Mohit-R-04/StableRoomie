@@ -37,11 +37,17 @@ public class studentService {
 
         ArrayList<String> cdd = new ArrayList<>();
         try {
+            if (category == null || category.isEmpty()) {
+                throw new IllegalArgumentException("Category cannot be empty");
+            }
             for (String i : category.split("-")) {
                 cdd.add(i);
             }
+            if (cdd.size() < 3) {
+                throw new IllegalArgumentException("Category must have format: college-department-year");
+            }
         } catch (Exception e) {
-            throw new IllegalArgumentException("Invalid category format");
+            throw new IllegalArgumentException("Invalid category format: " + e.getMessage());
         }
 
         try {
@@ -51,9 +57,9 @@ public class studentService {
         } catch (NumberFormatException e) {
             numStudents = 100;
         }
-        System.out.print(cdd);
+        System.out.println("Category parts: " + cdd);
 
-        if (cdd.get(0).equals("ssn")) {
+        if (cdd.get(0).equalsIgnoreCase("ssn")) {
             clg = "SSN College";
         } else {
             clg = "Shiv Nadar University";
@@ -61,14 +67,11 @@ public class studentService {
 
         // Extract department and year
         department = cdd.get(1).toUpperCase();
-
         year = cdd.get(2);
-
         clgDepartmentYear = clg + "-" + department + "-" + year;
 
         Pageable pageable = PageRequest.of(0, numStudents);
 
-        // TODO: PROBLEM WITH FILTER
         if ("both".equalsIgnoreCase(location)) {
             return repo.findByCategoryAndRoomType(clgDepartmentYear, roomType, pageable);
         } else {
