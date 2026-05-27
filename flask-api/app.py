@@ -87,7 +87,7 @@ def allot_roommates():
                 "response_text": response.text
             }), 500
         
-        return jsonify({"message": "Allotment Successful"}), 200
+        return jsonify({"message": "Allotment Successful", "groups": payload["groups"], "roomType": roomType}), 200
     except Exception as e:
         logger.error(f"Error during allotment: {str(e)}")
         return jsonify({"message": f"Allotment failed: {str(e)}"}), 500

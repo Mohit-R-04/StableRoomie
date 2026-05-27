@@ -87,12 +87,42 @@ function allotRooms() {
       category: category,
       roomType: roomType,
       numStudents: numStudents,
-    }), // send empty or actual data if needed
+    }),
   })
-    .then((response) => response.json())
-    .then((data) => window.alert(data.message))
+    .then((response) => {
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      return response.json();
+    })
+    .then((data) => {
+      window.alert(data.message);
+      
+      // Display the allotment results
+      if (data.groups && data.groups.length > 0) {
+        const resultsContainer = document.getElementById("results-container");
+        resultsContainer.innerHTML = "";
+        
+        data.groups.forEach((group, index) => {
+          const groupDiv = document.createElement("div");
+          groupDiv.style.cssText = "border: 1px solid #ddd; padding: 15px; margin-bottom: 10px; border-radius: 5px; background: #f9f9f9;";
+          
+          let groupHTML = `<h5>Group ${index + 1}</h5>`;
+          if (group.student_1) groupHTML += `<p><strong>Student 1:</strong> ${group.student_1}</p>`;
+          if (group.student_2) groupHTML += `<p><strong>Student 2:</strong> ${group.student_2}</p>`;
+          if (group.student_3) groupHTML += `<p><strong>Student 3:</strong> ${group.student_3}</p>`;
+          
+          groupDiv.innerHTML = groupHTML;
+          resultsContainer.appendChild(groupDiv);
+        });
+        
+        // Show results section
+        document.getElementById("allotment-results").style.display = "block";
+      }
+    })
     .catch((error) => {
       console.error("Error:", error);
+      alert("Allotment failed: " + error.message);
     });
 }
 
@@ -127,6 +157,8 @@ function showPreferences() {
     .querySelectorAll(".page")
     .forEach((page) => page.classList.remove("active"));
   document.getElementById("preferences-page").classList.add("active");
+  // Populate department dropdown when preferences page is shown
+  getDepartmentFromCategories();
 }
 
 function showAddCategoryModal() {
