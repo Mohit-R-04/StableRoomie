@@ -1,0 +1,31 @@
+name: Render Keep-Alive
+
+on:
+  schedule:
+    # Run every 5 minutes
+    - cron: '*/5 * * * *'
+  workflow_dispatch: # Allow manual trigger
+
+jobs:
+  keep-alive:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        service:
+          - name: 'Java Backend'
+            url: 'https://stableroomie.onrender.com/health'
+          - name: 'Flask API'
+            url: 'https://stableroomie-flask.onrender.com/health'
+    
+    steps:
+      - name: Ping ${{ matrix.service.name }}
+        run: |
+          echo "Pinging ${{ matrix.service.name }}..."
+          response=$(curl -s -o /dev/null -w "%{http_code}" "${{ matrix.service.url }}")
+          echo "Response Code: $response"
+          if [ "$response" -eq 200 ]; then
+            echo "✓ ${{ matrix.service.name }} is alive"
+          else
+            echo "✗ ${{ matrix.service.name }} returned status $response"
+            exit 1
+          fi
