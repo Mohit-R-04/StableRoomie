@@ -1432,6 +1432,43 @@ body:has(.dark-mode-toggle:checked) .badge.outline {
   animation: fadeIn 0.5s ease-out;
 }
 
+/* Error and Info Messages for Results */
+.error-message {
+  padding: 12px 16px;
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: 8px;
+  color: #dc2626;
+  font-size: 0.95rem;
+  margin: 8px 0;
+}
+
+body:has(.dark-mode-toggle:checked) .error-message {
+  background: rgba(239, 68, 68, 0.15);
+  color: #f87171;
+}
+
+.info-message {
+  padding: 12px 16px;
+  background: rgba(59, 130, 246, 0.1);
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  border-radius: 8px;
+  color: #1e40af;
+  font-size: 0.95rem;
+  margin: 8px 0;
+}
+
+body:has(.dark-mode-toggle:checked) .info-message {
+  background: rgba(59, 130, 246, 0.15);
+  color: #60a5fa;
+}
+
+/* Allotment Results Section */
+.results-list {
+  max-height: 500px;
+  overflow-y: auto;
+}
+
 /* Smooth transitions for all interactive elements */
 * {
   transition: color 0.3s ease, background-color 0.3s ease,

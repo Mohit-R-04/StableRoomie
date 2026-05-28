@@ -6,10 +6,17 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Optional;
 @Repository
 public interface groupsRepo extends JpaRepository<Groups, Long> {
     @Query("SELECT r.roomId FROM Rooms r WHERE r.roomType = :roomParam")
     Optional<Long> findFirstAvailableRoomId(@Param("roomParam") String roomType);
+
+    @Query("SELECT COALESCE(COUNT(g), 0) FROM Groups g WHERE g.roomId = :roomId")
+    int countGroupsByRoomId(@Param("roomId") Long roomId);
+
+    @Query("SELECT r.roomId, r.noOfStudents FROM Rooms r WHERE r.roomType = :roomParam")
+    List<Object[]> findRoomCapacityByType(@Param("roomParam") String roomType);
 }
 

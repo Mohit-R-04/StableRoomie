@@ -75,9 +75,18 @@ function allotRooms() {
   const numStudents = document.getElementById("num-students").value;
   const location = document.getElementById("allot-location").value;
   if (!(location && category && roomType && numStudents)) {
-    alert("Please fill all details");
+    alert("Please fill all details (Location, Category, Room Type, and Number of Students)");
     return false;
   }
+
+  // Show loading state
+  const allotBtn = document.querySelector('.dashboard-card .btn.primary[onclick="allotRooms()"]');
+  if (allotBtn) {
+    allotBtn.textContent = "Allotting...";
+    allotBtn.disabled = true;
+  }
+
+  document.getElementById("allotment-results").style.display = "none";
 
   fetch("/allot_roommates", {
     method: "POST",
@@ -91,12 +100,19 @@ function allotRooms() {
   })
     .then((response) => {
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        return response.json().then((err) => {
+          throw new Error(err.message || `HTTP error! status: ${response.status}`);
+        }).catch(() => {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        });
       }
       return response.json();
     })
     .then((data) => {
-      window.alert(data.message);
+      // Show the message from backend
+      if (data.message) {
+        window.alert(data.message);
+      }
       
       // Display the allotment results
       if (data.groups && data.groups.length > 0) {
@@ -118,11 +134,23 @@ function allotRooms() {
         
         // Show results section
         document.getElementById("allotment-results").style.display = "block";
+      } else if (data.message && !data.groups) {
+        // No groups but message exists (error or info)
+        document.getElementById("results-container").innerHTML = `<div class="info-message">${data.message}</div>`;
+        document.getElementById("allotment-results").style.display = "block";
       }
     })
     .catch((error) => {
       console.error("Error:", error);
       alert("Allotment failed: " + error.message);
+      document.getElementById("results-container").innerHTML = `<div class="error-message">Error: ${error.message}</div>`;
+      document.getElementById("allotment-results").style.display = "block";
+    })
+    .finally(() => {
+      if (allotBtn) {
+        allotBtn.textContent = "Allot Rooms";
+        allotBtn.disabled = false;
+      }
     });
 }
 
@@ -504,22 +532,37 @@ async function removeRoom(id) {
   }
 }
 
-// Populate department dropdown from categories
+// Populate department dropdown from categories (deduplicated)
 async function getDepartmentFromCategories() {
   try {
     const response = await fetch("/get-category");
     if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
     const categories = await response.json();
-    let departmentHTML = "";
+
+    // Use a Set to deduplicate departments
+    const deptSet = new Set();
     categories.forEach((cat) => {
       const values = cat.category.split("-");
-      const department = values[1] || cat.category;
-      departmentHTML += `<option value="${department}">${department}</option>`;
+      const department = (values[1] || cat.category).toUpperCase();
+      if (department) deptSet.add(department);
     });
+
+    // Build HTML with a default option first, then deduplicated departments
+    let departmentHTML = '<option value="">-- Select Department --</option>';
+    deptSet.forEach((dept) => {
+      departmentHTML += `<option value="${dept}">${dept}</option>`;
+    });
+
     const selectForm = document.querySelector(".js-department");
-    if (selectForm) selectForm.innerHTML = departmentHTML || '<option value="">No categories added yet</option>';
+    if (selectForm) {
+      selectForm.innerHTML = departmentHTML || '<option value="">No categories added yet</option>';
+    }
   } catch (error) {
     console.error("Error loading departments:", error);
+    const selectForm = document.querySelector(".js-department");
+    if (selectForm) {
+      selectForm.innerHTML = '<option value="">Failed to load departments</option>';
+    }
   }
 }
 
