@@ -1,0 +1,3 @@
+stableroomie.club-hub.dev {
+    reverse_proxy java-backend:8080
+}
