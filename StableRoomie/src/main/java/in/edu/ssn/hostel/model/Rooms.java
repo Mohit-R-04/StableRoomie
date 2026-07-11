@@ -21,6 +21,8 @@ public class Rooms {
     private Integer capacity;
 
     // Explicit getters and setters
+    public Long getRoomId() { return roomId; }
+    public void setRoomId(Long roomId) { this.roomId = roomId; }
     public String getRoomType() { return roomType; }
     public void setRoomType(String roomType) { this.roomType = roomType; }
     public Integer getCapacity() { return capacity; }

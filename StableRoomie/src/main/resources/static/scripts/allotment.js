@@ -363,6 +363,14 @@ function switchSection(sectionId, element) {
     sec.classList.remove("active");
   });
 
+  // Close mobile sidebar if open
+  const sidebar = document.querySelector(".app-sidebar");
+  const overlay = document.getElementById("sidebar-overlay");
+  if (sidebar && sidebar.classList.contains("mobile-open")) {
+    sidebar.classList.remove("mobile-open");
+    if (overlay) overlay.style.display = "none";
+  }
+
   // Show the selected section
   const target = document.getElementById(sectionId);
   if (target) {
@@ -653,17 +661,8 @@ function viewStudentPreferences(index) {
 
 function setAppTheme(theme) {
   const body = document.body;
-  if (theme === 'dark') {
-    body.classList.add('dark-mode');
-    document.getElementById('theme-btn-dark')?.classList.add('active');
-    document.getElementById('theme-btn-light')?.classList.remove('active');
-    localStorage.setItem('theme', 'dark');
-  } else {
-    body.classList.remove('dark-mode');
-    document.getElementById('theme-btn-light')?.classList.add('active');
-    document.getElementById('theme-btn-dark')?.classList.remove('active');
-    localStorage.setItem('theme', 'light');
-  }
+  body.classList.remove('dark-mode');
+  localStorage.setItem('theme', 'light');
 }
 
 async function loadStudentProfile() {
@@ -1254,5 +1253,18 @@ async function downloadRunPDF(runId, category, roomType, location) {
   } catch (error) {
     console.error("Error generating run PDF:", error);
     alert("Failed to download PDF for this allotment run. Please try again.");
+  }
+}
+
+function toggleMobileSidebar() {
+  const sidebar = document.querySelector(".app-sidebar");
+  const overlay = document.getElementById("sidebar-overlay");
+  if (sidebar && overlay) {
+    sidebar.classList.toggle("mobile-open");
+    if (sidebar.classList.contains("mobile-open")) {
+      overlay.style.display = "block";
+    } else {
+      overlay.style.display = "none";
+    }
   }
 }
