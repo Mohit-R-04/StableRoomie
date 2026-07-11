@@ -4,16 +4,16 @@
 
 ## 1. PROJECT OVERVIEW (Elevator Pitch)
 
-**StableRoomie** is a **full-stack hostel room allocation system** for SSN College of Engineering. It uses an **AI-inspired roommate matching algorithm** (Gale-Shapley Stable Matching) to assign students to hostel rooms based on lifestyle compatibility preferences.
+**StableRoomie** is a **full-stack hostel room allocation system** for SSN College of Engineering. It uses a **hybrid roommate matching algorithm** combining **Gale-Shapley stable matching** (for students with preferred roommates) and **Louvain community detection** (for the remaining students), along with greedy and KDTree fallback strategies.
 
 ### One-liner for interviews:
-> "StableRoomie is a full-stack web application that uses the Gale-Shapley Stable Matching algorithm to optimally assign students to hostel rooms based on lifestyle preferences like sleep schedule, study habits, cleanliness, and noise tolerance — built with Spring Boot, Flask (Python), PostgreSQL, and vanilla JavaScript."
+> "StableRoomie is a full-stack web application that uses Gale-Shapley stable matching for preferred roommate pairs and Louvain community detection for the rest, to optimally assign students to hostel rooms based on lifestyle preferences — built with Spring Boot, Flask (Python), PostgreSQL, and vanilla JavaScript."
 
 ### Key Highlights:
 - **Microservices architecture**: Spring Boot (Java) for backend + Flask (Python) for algorithm
 - **OAuth2/Google SSO** authentication with domain restriction
 - **Role-based access** (Admin vs Student)
-- **Stable Matching Algorithm** — no student would prefer to swap with another (mathematically proven)
+- **Hybrid Matching Algorithm** — Gale-Shapley for preferred roommates + Louvain community detection for remaining students
 - **Deployed** on Azure VM with Docker Compose (Spring Boot, Flask, PostgreSQL, Caddy)
 - **Docker** containerized with CI/CD
 
@@ -42,7 +42,7 @@
                         ▼
 ┌─────────────────────────────────────────────────────────┐
 │              FLASK API (Python 3.12)                      │
-│  - /allot endpoint — Gale-Shapley algorithm              │
+│  - /allot endpoint — Gale-Shapley + Louvain hybrid algo  │
 │  - Reads students directly from PostgreSQL               │
 │  - Port: 5001                                            │
 └───────────────────────┬─────────────────────────────────┘
@@ -152,78 +152,98 @@ timestamp (TIMESTAMP)
 
 ---
 
-## 5. CORE ALGORITHM — GALE-SHAPLEY STABLE MATCHING
+## 5. CORE ALGORITHM — HYBRID MATCHING (GALE-SHAPLEY + LOUVAIN)
 
-### What is Stable Matching?
-The **Gale-Shapley algorithm** (1962) solves the "stable marriage problem": given n men and n women each ranking all members of the opposite sex, find a stable matching where no pair would prefer each other over their assigned partners.
+### Overview:
+The algorithm uses a **hybrid 4-pass approach**:
+- **Gale-Shapley style stable matching** handles students who specified preferred roommates
+- **Louvain community detection** handles the remaining students by finding natural compatibility clusters
+- Greedy and KDTree fallbacks ensure nearly 100% assignment rate
 
-### How StableRoomie Adapts It:
-
-#### Problem Transformation:
-1. **Each student is both a "proposer" and a "reviewer"** — the algorithm runs twice (forward and reverse) to eliminate proposer bias
-2. **Compatibility score replaces preference lists** — computed from lifestyle attributes
-3. **Room capacity > 2** — rooms hold 2-4 students, requiring group formation
-
-#### Compatibility Scoring Function:
+### Pass 1 — Gale-Shapley Style Mutual Preference Matching:
 ```python
-def calculate_score(A, B):
+# Students who filled preferred roommates get matched via stable matching logic
+# Similar to Gale-Shapley: each student "proposes" to their preferred roommates,
+# and only mutual acceptance (both sides listed each other) forms a group
+for student in students:
+    pref_names = student.get("preferredRoommates", "").split(",")
+    # Find C-1 friends who also mutually prefer this student
+    # If mutual group of size C found → assign immediately (stable match)
+```
+
+This is analogous to **Gale-Shapley** — students who mutually prefer each other form stable pairs/groups. No student in a mutually-preferred group would want to swap, guaranteeing stability for these assignments.
+
+### Pass 2 — Louvain Community Detection (for remaining students):
+```python
+import networkx as nx
+import community as community_louvain
+
+# Build weighted compatibility graph from unassigned students
+G = nx.Graph()
+for s1, s2 in student_pairs:
+    score = compatibility(s1, s2)  # weighted edge
+    G.add_edge(s1.studentId, s2.studentId, weight=score)
+
+# Louvain detects natural clusters of compatible students
+partition = community_louvain.best_partition(G, weight="weight")
+# Communities split into rooms of size C
+```
+
+**Louvain** optimizes **modularity** — it finds groups where students are more compatible with each other than with the rest of the graph. Each community is then divided into rooms of size C.
+
+### Why Both Algorithms?
+- **Gale-Shapley** (Pass 1): Best for students who **already know** their preferred roommates — produces guaranteed stable matches
+- **Louvain** (Pass 2): Best for students who **didn't specify** preferences — discovers latent compatibility clusters from lifestyle data
+- Together they handle both **explicit preferences** and **implicit compatibility**
+
+### Pass 3 — Greedy Compatibility Matching:
+```python
+# For students not caught by community detection
+# Greedily match highest-compatibility pairs
+while len(remaining) >= C:
+    anchor = remaining[0]
+    candidates = sorted(compat_graph[anchor], key=lambda x: -x[1])
+    # Pick top C-1 compatible unassigned students
+```
+
+### Pass 4 — KDTree Nearest-Neighbour (Fallback):
+```python
+from sklearn.neighbors import KDTree
+import numpy as np
+
+# Convert student attributes to numerical vectors
+vectors = [[sleep, wake, noise, light, cleanliness, study] for s in students]
+tree = KDTree(np.array(vectors))
+
+# For each leftover student, find C-1 nearest neighbours
+dist, idxs = tree.query([vectors[i]], k=C)
+```
+
+### Compatibility Scoring Function:
+```python
+def compatibility(s1, s2, students):
     score = 0
-    
-    # Sleep time difference (0-25 points)
-    score += 25 * (1 - abs(sleep_A - sleep_B) / 6)
-    
-    # Wake time difference (0-25 points)
-    score += 25 * (1 - abs(wake_A - wake_B) / 6)
-    
-    # Study habits match (0-15 points)
-    if study_A == study_B: score += 15
-    elif compatible_pair: score += 7  # e.g., "silent" ↔ "music"
-    
-    # Cleanliness match (0-15 points)
-    if clean_A == clean_B: score += 15
-    elif adjacent_levels: score += 7  # e.g., "very-clean" ↔ "moderately-clean"
-    
-    # Noise level (0-10 points)
-    if noise_A == noise_B: score += 10
-    elif compatible_pair: score += 5
-    
-    # Light sensitivity (0-10 points)
-    if light_A == light_B: score += 10
-    
-    return score  # Max: 100
+    MAX_DIFF = 2
+
+    # Sleep time similarity (weight: 0.4)
+    score += max(0, (MAX_DIFF - sleep_diff) / MAX_DIFF) * 0.4
+
+    # Wake time similarity (weight: 0.4)
+    score += max(0, (MAX_DIFF - wake_diff) / MAX_DIFF) * 0.4
+
+    # Noise level match: +0.3 if same
+    # Light sensitivity match: +0.3 if same
+    # Cleanliness match: +0.3 if same, +0.2 if adjacent
+    # Study habits match: +0.3 if same, partial for compatible pairs
+
+    # Mutual preference bonus: +1.0 if both prefer each other
+    # One-way preference: +0.5
+    return score
 ```
 
-#### The Algorithm Steps:
-```
-1. Group students by: location + college + department + year
-2. For each group:
-   a. Fetch available rooms for the requested room type
-   b. Compute pairwise compatibility scores (N×N matrix)
-   c. Build ranked preference lists (each student ranks all others)
-   d. Run Gale-Shapley Forward (students propose to preferred roommates)
-   e. Run Gale-Shapley Reverse (swaps proposer/reviewer roles)
-   f. Average both results to eliminate bias
-   g. Convert matched pairs → room assignments
-   h. Save to DB via direct SQL (bypasses ORM for performance)
-   i. Record in allotment_runs (audit trail)
-3. Return all grouped students with room assignments
-```
-
-#### Key Innovation — Bidirectional Matching:
-```python
-engagements_fwd = gale_shapley(preference_lists, room_capacity, N)
-engagements_rev = gale_shapley(reversed_preference_lists, room_capacity, N)
-
-# Average: student gets best room assignment from both runs
-for sid in all_student_ids:
-    room = average(engagements_fwd[sid], engagements_rev[sid])
-```
-
-This eliminates the **proposer advantage** inherent in classical Gale-Shapley.
-
-#### Complexity:
-- **Time**: O(N²) per student group for pairwise scoring + O(N²) for Gale-Shapley
-- **Space**: O(N²) for the compatibility matrix and preference lists
+### Complexity:
+- **Time**: O(N²) per student group for pairwise scoring + O(E) for Louvain community detection
+- **Space**: O(N²) for the compatibility graph adjacency matrix
 
 ---
 
@@ -437,15 +457,17 @@ cloudb.site {
 ### Q: "Why did you use two separate backends instead of one?"
 **A**: Separation of concerns. Spring Boot handles web serving, authentication, and CRUD — things Java/Spring excels at with built-in security. The matching algorithm is computationally intensive and benefits from Python's direct database access (raw SQL via psycopg2) for performance. This also allows independent scaling and deployment.
 
-### Q: "Explain the Gale-Shapley algorithm and how you adapted it."
-**A**: Classical Gale-Shapley solves stable marriage by having one side propose and the other accept/reject. We adapted it for roommate matching by:
-1. Using compatibility scores (0-100) instead of explicit preference lists
-2. Running it **bidirectionally** (forward + reverse) to eliminate proposer bias
-3. Supporting **room capacity > 2** by sequentially filling rooms with matched students
-4. Matching within **constrained groups** (same college, department, year, location)
+### Q: "Explain the room allocation algorithm."
+**A**: We use a **hybrid algorithm** combining two complementary strategies:
+1. **Gale-Shapley stable matching**: Students who specified preferred roommates get matched via mutual preference logic — if A lists B and B lists A, they're stably paired. No student would want to swap.
+2. **Louvain community detection**: For students without preferred roommates, we build a weighted compatibility graph (NetworkX) and run Louvain modularity optimization to find natural clusters of compatible students, then split each cluster into rooms.
+3. **Greedy compatibility**: Students not caught by community detection are greedily matched by highest compatibility score.
+4. **KDTree nearest-neighbour**: Last-resort fallback for hard-to-match leftovers.
 
-### Q: "Why is the matching 'stable'?"
-**A**: A matching is stable when no two students would both prefer to be roommates over their current assignments. Gale-Shapley guarantees this mathematically. In our case, "preference" is quantified by compatibility score. The bidirectional averaging ensures neither the proposer nor reviewer has an inherent advantage.
+The key insight: **Gale-Shapley handles explicit preferences** (students who already know who they want), while **Louvain handles implicit compatibility** (discovers hidden compatibility clusters from lifestyle data).
+
+### Q: "Why use both Gale-Shapley and Louvain instead of just one?"
+**A**: They solve different problems. Gale-Shapley produces **stable matches** for students with explicit roommate preferences — no one would want to swap. But it doesn't work well for students without preferences. Louvain discovers **latent compatibility clusters** from lifestyle attributes (sleep schedule, study habits, cleanliness, etc.), which naturally map to room groups. Using both ensures we respect student choices AND maximize overall compatibility for everyone else.
 
 ### Q: "How does authentication work?"
 **A**: Google OAuth2 via Spring Security. The flow:
@@ -566,7 +588,7 @@ Spring Boot uses JPA for all other CRUD. This hybrid approach gives us ORM conve
 - Git, GitHub
 
 ### Concepts:
-- Gale-Shapley Stable Matching Algorithm
+- Hybrid Matching (Gale-Shapley Stable Matching + Louvain Community Detection)
 - Microservices Architecture
 - OAuth2 / OpenID Connect
 - RESTful API Design
@@ -587,6 +609,6 @@ Spring Boot uses JPA for all other CRUD. This hybrid approach gives us ORM conve
 - **6 compatibility dimensions** (sleep, wake, study habits, cleanliness, noise, light)
 - **Maximum compatibility score**: 100 points
 - **Algorithm complexity**: O(N²) per student group
-- **Bidirectional matching**: Runs Gale-Shapley twice (forward + reverse) to eliminate bias
+- **Hybrid algorithm**: Gale-Shapley (preferred roommates) + Louvain (remaining) + Greedy + KDTree
 - **1 deployment platform**: Azure VM with Docker Compose
 - **4 Docker containers**: Spring Boot, Flask, PostgreSQL, Caddy
