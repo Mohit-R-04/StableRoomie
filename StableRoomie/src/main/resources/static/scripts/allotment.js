@@ -286,8 +286,6 @@ async function showCategory() {
 
 // Call this function when the page loads
 document.addEventListener("DOMContentLoaded", function () {
-  const savedTheme = localStorage.getItem('theme') || 'light';
-  setAppTheme(savedTheme);
   showCategory();
   showRooms();
   checkUserRoleAndShowDashboard();
@@ -657,12 +655,6 @@ function viewStudentPreferences(index) {
   closeBtn.addEventListener("click", () => {
     modal.remove();
   });
-}
-
-function setAppTheme(theme) {
-  const body = document.body;
-  body.classList.remove('dark-mode');
-  localStorage.setItem('theme', 'light');
 }
 
 async function loadStudentProfile() {
