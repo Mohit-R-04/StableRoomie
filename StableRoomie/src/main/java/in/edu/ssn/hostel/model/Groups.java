@@ -29,8 +29,12 @@ public class Groups {
     private Integer student2;
     @Column(name = "student_3", nullable = true)
     private Integer student3;
+    @Column(name = "student_4", nullable = true)
+    private Integer student4;
     @Column(name = "room_id")
     private Long roomId;
+    @Column(name = "run_id", nullable = true)
+    private Long runId;
 
     // Explicit getters and setters to ensure Lombok works
     public Integer getStudent1() { return student1; }
@@ -39,6 +43,10 @@ public class Groups {
     public void setStudent2(Integer student2) { this.student2 = student2; }
     public Integer getStudent3() { return student3; }
     public void setStudent3(Integer student3) { this.student3 = student3; }
+    public Integer getStudent4() { return student4; }
+    public void setStudent4(Integer student4) { this.student4 = student4; }
     public Long getRoomId() { return roomId; }
     public void setRoomId(Long roomId) { this.roomId = roomId; }
+    public Long getRunId() { return runId; }
+    public void setRunId(Long runId) { this.runId = runId; }
 }

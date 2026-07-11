@@ -15,7 +15,11 @@ public interface studentRepo extends JpaRepository<Student, Integer> {
 
     @Query("SELECT s FROM Student s WHERE "
             + "(:category IS NULL OR LOWER(CONCAT(s.clg, '-', s.department, '-', s.year)) = LOWER(:category)) AND "
-            + "(:roomType IS NULL OR LOWER(s.roomType) = LOWER(:roomType)) "
+            + "(:roomType IS NULL OR LOWER(s.roomType) = LOWER(:roomType)) AND "
+            + "s.studentId NOT IN (SELECT COALESCE(g.student1, -1) FROM Groups g) AND "
+            + "s.studentId NOT IN (SELECT COALESCE(g.student2, -1) FROM Groups g) AND "
+            + "s.studentId NOT IN (SELECT COALESCE(g.student3, -1) FROM Groups g) AND "
+            + "s.studentId NOT IN (SELECT COALESCE(g.student4, -1) FROM Groups g) "
             + "ORDER BY s.submittedTime ASC")
     List<Student> findByCategoryAndRoomType(
             @Param("category") String category,
@@ -25,7 +29,11 @@ public interface studentRepo extends JpaRepository<Student, Integer> {
     @Query("SELECT s FROM Student s WHERE "
             + "(:location IS NULL OR LOWER(s.location) = LOWER(:location)) AND "
             + "(:category IS NULL OR LOWER(CONCAT(s.clg, '-', s.department, '-', s.year)) = LOWER(:category)) AND "
-            + "(:roomType IS NULL OR LOWER(s.roomType) = LOWER(:roomType)) "
+            + "(:roomType IS NULL OR LOWER(s.roomType) = LOWER(:roomType)) AND "
+            + "s.studentId NOT IN (SELECT COALESCE(g.student1, -1) FROM Groups g) AND "
+            + "s.studentId NOT IN (SELECT COALESCE(g.student2, -1) FROM Groups g) AND "
+            + "s.studentId NOT IN (SELECT COALESCE(g.student3, -1) FROM Groups g) AND "
+            + "s.studentId NOT IN (SELECT COALESCE(g.student4, -1) FROM Groups g) "
             + "ORDER BY s.submittedTime ASC")
     List<Student> findByLocationAndCategoryAndRoomType(
             @Param("location") String location,
@@ -33,4 +41,5 @@ public interface studentRepo extends JpaRepository<Student, Integer> {
             @Param("roomType") String roomType,
             Pageable pageable);
 
+    Student findByEmail(String email);
 }

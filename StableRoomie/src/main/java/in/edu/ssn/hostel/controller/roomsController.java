@@ -31,6 +31,12 @@ public class roomsController {
         return ResponseEntity.ok().build();
     }
 
+    @DeleteMapping("/remove-room-type/{roomType}")
+    public ResponseEntity<Void> removeRoomType(@PathVariable String roomType) {
+        room.deleteByRoomType(roomType);
+        return ResponseEntity.ok().build();
+    }
+
     @PostMapping("/remove-room-type")
     public void removeRoomTypeLegacy(@RequestParam("roomType") String roomType, jakarta.servlet.http.HttpServletResponse response) throws java.io.IOException {
         room.deleteByRoomType(roomType);

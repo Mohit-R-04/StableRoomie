@@ -14,13 +14,10 @@ public class roomService {
     roomRepo repo;
     public Rooms saveRoom(Map<String, Object> handr){
         String hostel = (String) handr.get("name");
-        int roomNo = (int) handr.get("no");
-
-        System.out.println(hostel);
-        System.out.println(roomNo);
+        int capacity = handr.containsKey("capacity") ? ((Number) handr.get("capacity")).intValue() : 3;
         Rooms room = new Rooms();
         room.setRoomType(hostel);
-        room.setNoOfStudents(roomNo);
+        room.setCapacity(capacity);
         repo.save(room);
         return room;
     }
@@ -46,12 +43,12 @@ public class roomService {
         if (repo.count() == 0) {
             Rooms room1 = new Rooms();
             room1.setRoomType("3-Sharing");
-            room1.setNoOfStudents(3);
+            room1.setCapacity(3);
             repo.save(room1);
 
             Rooms room2 = new Rooms();
             room2.setRoomType("2-Sharing");
-            room2.setNoOfStudents(2);
+            room2.setCapacity(2);
             repo.save(room2);
         }
     }

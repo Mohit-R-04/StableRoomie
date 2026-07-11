@@ -75,4 +75,7 @@ public class Student {
 
     @Column(name = "location")
     private String location;
+
+    @Column(name = "email", unique = true)
+    private String email;
 }

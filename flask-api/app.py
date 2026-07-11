@@ -62,21 +62,28 @@ def allot_roommates():
 
     # Perform the allotment
     try:
+        capacity = int(request_data.get("capacity", 3))
         # Allot roommates using matching algorithm
-        allotment, roomType = allot.allotment(students)
+        allotment, roomType = allot.allotment(students, capacity=capacity)
         
         # Build payload with only students that exist
-        payload = {"groups": [], "roomType": roomType}
+        payload = {
+            "groups": [],
+            "roomType": roomType,
+            "category": request_data.get("category", "All"),
+            "location": request_data.get("location", "both")
+        }
+        frontend_groups = []
         for group in allotment:
             formGroup = {}
-            if len(group) > 0:
-                formGroup["student_1"] = group[0]
-            if len(group) > 1:
-                formGroup["student_2"] = group[1]
-            if len(group) > 2:
-                formGroup["student_3"] = group[2]
+            fg = {}
+            for idx, sid in enumerate(group):
+                formGroup[f"student_{idx+1}"] = sid
+                s_name = student_map[sid]["name"] if sid in student_map else f"Student {sid}"
+                fg[f"student_{idx+1}"] = f"{s_name} ({sid})"
             if formGroup:  # Only add non-empty groups
                 payload["groups"].append(formGroup)
+                frontend_groups.append(fg)
         
         # Send groups to Java backend for persistence
         response = requests.post(f"{java_backend_url}/save-groups", json=payload, headers=headers)
@@ -87,7 +94,7 @@ def allot_roommates():
                 "response_text": response.text
             }), 500
         
-        return jsonify({"message": "Allotment Successful", "groups": payload["groups"], "roomType": roomType}), 200
+        return jsonify({"message": "Allotment Successful", "groups": frontend_groups, "roomType": roomType}), 200
     except Exception as e:
         logger.error(f"Error during allotment: {str(e)}")
         return jsonify({"message": f"Allotment failed: {str(e)}"}), 500

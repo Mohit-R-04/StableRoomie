@@ -16,7 +16,12 @@ public interface groupsRepo extends JpaRepository<Groups, Long> {
     @Query("SELECT COALESCE(COUNT(g), 0) FROM Groups g WHERE g.roomId = :roomId")
     int countGroupsByRoomId(@Param("roomId") Long roomId);
 
-    @Query("SELECT r.roomId, r.noOfStudents FROM Rooms r WHERE r.roomType = :roomParam")
-    List<Object[]> findRoomCapacityByType(@Param("roomParam") String roomType);
+    @Query("SELECT r.roomId FROM Rooms r WHERE r.roomType = :roomParam")
+    List<Long> findRoomsByType(@Param("roomParam") String roomType);
+
+    @Query("SELECT g FROM Groups g WHERE g.student1 = :id OR g.student2 = :id OR g.student3 = :id OR g.student4 = :id")
+    Optional<Groups> findGroupByStudentId(@Param("id") Integer studentId);
+
+    List<Groups> findByRunId(Long runId);
 }
 

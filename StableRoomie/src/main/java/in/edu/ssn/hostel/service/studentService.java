@@ -78,4 +78,16 @@ public class studentService {
             return repo.findByLocationAndCategoryAndRoomType(location, clgDepartmentYear, roomType, pageable);
         }
     }
+
+    public Student getStudentByEmail(String email) {
+        return repo.findByEmail(email);
+    }
+
+    public List<Student> getAllStudents() {
+        return repo.findAll();
+    }
+
+    public java.util.Optional<Student> getStudentById(int id) {
+        return repo.findById(id);
+    }
 }

@@ -101,44 +101,54 @@ def compatibility(s1, s2, students):
     return score
 
 
-def allotment(students):
+def allotment(students, capacity=3):
+    C = capacity
     groups = []
     assigned = set()
     student_map = {s["studentId"]: s for s in students}
 
-    # --- Pass 1: Mutual 3-way friend preference ---
+    if C == 1:
+        for student in students:
+            groups.append([student["studentId"]])
+        room_type = students[0]["roomType"] if students else "1-Sharing"
+        return groups, room_type
+
+    # --- Pass 1: Mutual C-way friend preference ---
     for student in students:
         if student["studentId"] in assigned:
             continue
 
         raw = student.get("preferredRoommates", "") or ""
         pref_names = [n.strip() for n in raw.split(",") if n.strip()]
-        if len(pref_names) < 2:
+        if len(pref_names) < C - 1:
             continue
 
-        # Find first student matching each preferred name
-        f1_id = next((s["studentId"] for s in students if s["name"].strip() == pref_names[0]), None)
-        f2_id = next((s["studentId"] for s in students if s["name"].strip() == pref_names[1]), None)
+        # Find unassigned matching student IDs
+        pref_ids = []
+        for name in pref_names:
+            matching_id = next((s["studentId"] for s in students if s["name"].strip().lower() == name.lower()), None)
+            if matching_id and matching_id not in assigned and matching_id != student["studentId"]:
+                pref_ids.append(matching_id)
 
-        if f1_id is None or f2_id is None:
+        if len(pref_ids) < C - 1:
             continue
-        if f1_id not in student_map or f2_id not in student_map:
-            continue
 
-        f1_student = student_map[f1_id]
-        f2_student = student_map[f2_id]
-
-        f1_prefs = get_preferred_ids(f1_student, students)
-        f2_prefs = get_preferred_ids(f2_student, students)
-
-        # All three must mutually prefer each other
-        if (student["studentId"] in f1_prefs and
-                student["studentId"] in f2_prefs and
-                f2_id in f1_prefs):
-            group = [student["studentId"], f1_id, f2_id]
-            if all(sid not in assigned for sid in group):
-                groups.append(group)
-                assigned.update(group)
+        # Find combination of size C-1 from pref_ids that mutually prefer each other
+        import itertools
+        for comb in itertools.combinations(pref_ids, C - 1):
+            candidate_group = [student["studentId"]] + list(comb)
+            mutual = True
+            for member_id in candidate_group:
+                member_student = student_map[member_id]
+                member_prefs = get_preferred_ids(member_student, students)
+                others = [m for m in candidate_group if m != member_id]
+                if not all(o in member_prefs for o in others):
+                    mutual = False
+                    break
+            if mutual:
+                groups.append(candidate_group)
+                assigned.update(candidate_group)
+                break
 
     # --- Pass 2: Louvain community detection on unassigned students ---
     unassigned = [s for s in students if s["studentId"] not in assigned]
@@ -159,12 +169,12 @@ def allotment(students):
             communities[cid].append(sid)
 
         for cid, members in communities.items():
-            while len(members) >= 3:
-                group = members[:3]
+            while len(members) >= C:
+                group = members[:C]
                 groups.append(group)
                 assigned.update(group)
-                members = members[3:]
-            # Remaining 1-2 members go back for pass 3
+                members = members[C:]
+            # Remaining members go back for pass 3
             for rem in members:
                 if rem in G:
                     G.remove_node(rem)
@@ -183,16 +193,16 @@ def allotment(students):
                 compat_graph[s1["studentId"]].append((s2["studentId"], score))
                 compat_graph[s2["studentId"]].append((s1["studentId"], score))
 
-    while len(remaining_ids) >= 3:
+    while len(remaining_ids) >= C:
         anchor = remaining_ids[0]
         candidates = sorted(compat_graph[anchor], key=lambda x: -x[1])
         picks = []
         for cid, _ in candidates:
             if cid in remaining_ids and cid != anchor:
                 picks.append(cid)
-            if len(picks) == 2:
+            if len(picks) == C - 1:
                 break
-        if len(picks) == 2:
+        if len(picks) == C - 1:
             group = [anchor] + picks
             groups.append(group)
             for sid in group:
@@ -227,20 +237,19 @@ def allotment(students):
         for i in range(len(id_list)):
             if id_list[i] in visited:
                 continue
-            k = min(3, len(vectors))
+            k = min(C, len(vectors))
             dist, idxs = tree.query([vectors[i]], k=k)
             group_ids = [id_list[j] for j in idxs[0] if id_list[j] not in visited]
-            if len(group_ids) == 3:
+            if len(group_ids) == C:
                 groups.append(group_ids)
                 visited.update(group_ids)
                 assigned.update(group_ids)
 
-    # --- Collect absolute leftovers (1 or 2 remaining) ---
+    # --- Collect absolute leftovers (fewer than C remaining) ---
     leftover = [s for s in students if s["studentId"] not in assigned]
-    if len(leftover) == 1:
-        groups.append([leftover[0]["studentId"]])
-    elif len(leftover) == 2:
-        groups.append([leftover[0]["studentId"], leftover[1]["studentId"]])
+    for i in range(0, len(leftover), C):
+        chunk = leftover[i:i+C]
+        groups.append([sid["studentId"] for sid in chunk])
 
     room_type = students[0]["roomType"] if students else "3-Sharing"
     return groups, room_type

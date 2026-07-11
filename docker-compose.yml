@@ -29,6 +29,8 @@ services:
       - DB_URL=jdbc:postgresql://db:5432/stableromie
       - DB_USERNAME=mohitreddy
       - DB_PASSWORD=password
+      - DB_DRIVER=org.postgresql.Driver
+      - DB_DIALECT=org.hibernate.dialect.PostgreSQLDialect
       - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
       - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
       - FLASK_API_URL=http://flask-api:5000
@@ -48,5 +50,20 @@ services:
     depends_on:
       - java-backend
 
+  caddy:
+    image: caddy:2-alpine
+    container_name: stableroomie-caddy
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - java-backend
+
 volumes:
   pgdata:
+  caddy_data:
+  caddy_config:
