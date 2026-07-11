@@ -32,44 +32,7 @@ public class LoginController {
         return "redirect:/login?error=oauth";
     }
 
-    @GetMapping("/dev-login")
-    public String devLogin(@RequestParam("role") String role, HttpServletRequest request) {
-        Map<String, Object> attributes = new HashMap<>();
-        if ("ADMIN".equals(role.toUpperCase())) {
-            attributes.put("email", "mohit.official04091k@gmail.com");
-            attributes.put("name", "Dev Admin");
-            attributes.put("role", "ADMIN");
-        } else {
-            attributes.put("email", "student.test@ssn.edu.in");
-            attributes.put("name", "Dev Student");
-            attributes.put("role", "STUDENT");
-        }
 
-        org.springframework.security.core.authority.SimpleGrantedAuthority authority = 
-            new org.springframework.security.core.authority.SimpleGrantedAuthority("ROLE_USER");
-        
-        OAuth2User principal = new org.springframework.security.oauth2.core.user.DefaultOAuth2User(
-            Collections.singleton(authority),
-            attributes,
-            "email"
-        );
-
-        org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken token = 
-            new org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken(
-                principal,
-                Collections.singleton(authority),
-                "google"
-            );
-
-        org.springframework.security.core.context.SecurityContextHolder.getContext().setAuthentication(token);
-        
-        request.getSession(true).setAttribute(
-            org.springframework.security.web.context.HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY,
-            org.springframework.security.core.context.SecurityContextHolder.getContext()
-        );
-
-        return "redirect:/process";
-    }
 
     @RequestMapping("/process")
     public void processLogin(@AuthenticationPrincipal OAuth2User principal, HttpServletResponse response) throws IOException {
