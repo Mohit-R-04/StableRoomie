@@ -4,6 +4,7 @@ services:
   db:
     image: postgres:14-alpine
     container_name: stableroomie-db
+    restart: unless-stopped
     environment:
       POSTGRES_DB: stableromie
       POSTGRES_USER: mohitreddy
@@ -23,6 +24,7 @@ services:
       context: ./StableRoomie
       dockerfile: Dockerfile
     container_name: stableroomie-java
+    restart: unless-stopped
     ports:
       - "8080:8080"
     environment:
@@ -43,6 +45,7 @@ services:
       context: ./flask-api
       dockerfile: Dockerfile
     container_name: stableroomie-flask
+    restart: unless-stopped
     ports:
       - "5000:5000"
     environment:
@@ -53,6 +56,7 @@ services:
   caddy:
     image: caddy:2-alpine
     container_name: stableroomie-caddy
+    restart: unless-stopped
     ports:
       - "80:80"
       - "443:443"
