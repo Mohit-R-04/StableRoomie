@@ -2,7 +2,7 @@
 # check-activity.sh - Monitors web activity and shuts down VM after 8 hours of inactivity
 # Installed by: StableRoomie Azure cost optimization
 
-INACTIVITY_HOURS=8
+INACTIVITY_HOURS=1
 INACTIVITY_SECONDS=$((INACTIVITY_HOURS * 3600))
 ACTIVITY_FILE='/tmp/last-web-activity'
 LOG_FILE='/var/log/activity-monitor.log'
