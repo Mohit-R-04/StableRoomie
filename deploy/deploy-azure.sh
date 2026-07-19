@@ -1,77 +1,117 @@
 #!/usr/bin/env bash
 
 # deploy-azure.sh
-# Automates the setup of Docker, Docker Compose, and starts the StableRoomie stack on an Azure Ubuntu VM.
+# Builds and deploys StableRoomie to Azure Container Apps.
+#
+# Architecture:
+#   - Java Backend → Container App (stableroomie-api)
+#   - Flask API   → Container App (stableroomie-flask)
+#   - Shared ACR  → ssiwalletacr.azurecr.io
+#   - Shared Env  → ssi-wallet-env
+#
+# Prerequisites:
+#   - Azure CLI installed and authenticated (az login)
+#   - Docker installed locally (for building images)
+#   - Custom domain DNS pointing to environment static IP (135.235.144.68)
 
 set -euo pipefail
 
 echo "============================================="
-echo "   StableRoomie Azure Deployment Automator"
+echo "   StableRoomie Azure Container Apps Deploy"
 echo "============================================="
 
-# 1. Update package lists
-echo "--> Updating system packages..."
-sudo apt-get update -y
+# --- Configuration ---
+RG="ssi-wallet-rg"
+ENV="ssi-wallet-env"
+ACR="ssiwalletacr"
+JAVA_APP="stableroomie-api"
+FLASK_APP="stableroomie-flask"
+JAVA_IMAGE="$ACR.azurecr.io/stableroomie-java:latest"
+FLASK_IMAGE="$ACR.azurecr.io/stableroomie-flask:latest"
 
-# 2. Install prerequisites
-echo "--> Installing prerequisites..."
-sudo apt-get install -y \
-    ca-certificates \
-    curl \
-    gnupg \
-    lsb-release \
-    git
+# --- Verify prerequisites ---
+echo "--> Checking prerequisites..."
+command -v az >/dev/null 2>&1 || { echo "Error: Azure CLI (az) not found. Install it first."; exit 1; }
+command -v docker >/dev/null 2>&1 || { echo "Error: Docker not found. Install it first."; exit 1; }
 
-# 3. Add Docker GPG Key & Repository
-echo "--> Setting up Docker official repository..."
-sudo mkdir -p /etc/apt/keyrings
-if [ ! -f /etc/apt/keyrings/docker.gpg ]; then
-    curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
-fi
+# --- Verify Azure login ---
+echo "--> Verifying Azure CLI login..."
+az account show >/dev/null 2>&1 || { echo "Error: Not logged in. Run 'az login' first."; exit 1; }
 
-echo \
-  "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu \
-  $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+# --- Log in to ACR ---
+echo "--> Logging in to Azure Container Registry..."
+az acr login --name "$ACR"
 
-# 4. Install Docker Engine and Docker Compose
-echo "--> Installing Docker Engine and Docker Compose..."
-sudo apt-get update -y
-sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin
+# --- Build and push images ---
+echo "--> Building Java backend image..."
+docker build -f StableRoomie/Dockerfile.deploy -t "$JAVA_IMAGE" StableRoomie/
+echo "--> Pushing Java backend image..."
+docker push "$JAVA_IMAGE"
 
-# 5. Start and enable Docker
-echo "--> Enabling and starting Docker service..."
-sudo systemctl enable docker
-sudo systemctl start docker
+echo "--> Building Flask API image..."
+docker build -f flask-api/Dockerfile.deploy -t "$FLASK_IMAGE" flask-api/
+echo "--> Pushing Flask API image..."
+docker push "$FLASK_IMAGE"
 
-# 6. Verify Docker Installation
-echo "--> Verifying Docker installation..."
-sudo docker --version
-sudo docker compose version
+# --- Create/update Java backend Container App ---
+echo "--> Deploying Java backend Container App..."
+az containerapp up \
+  --name "$JAVA_APP" \
+  --resource-group "$RG" \
+  --environment "$ENV" \
+  --image "$JAVA_IMAGE" \
+  --registry-server "$ACR.azurecr.io" \
+  --registry-username "$ACR" \
+  --registry-password "$(az acr credential show --name "$ACR" --query "passwords[0].value" -o tsv)" \
+  --target-port 8080 \
+  --ingress external \
+  --min-replicas 0 \
+  --max-replicas 3 \
+  --cpu 1.0 \
+  --memory 2Gi 2>/dev/null || {
+    echo "--> Container app exists, updating image..."
+    az containerapp update \
+      --name "$JAVA_APP" \
+      --resource-group "$RG" \
+      --image "$JAVA_IMAGE" 2>/dev/null || true
+  }
 
-# 7. Configure current user to run Docker commands without sudo (Optional but recommended)
-echo "--> Adding current user to docker group..."
-sudo usermod -aG docker $USER || true
-echo "Note: You might need to log out and log back in for docker group changes to take effect."
+# --- Create/update Flask API Container App ---
+echo "--> Deploying Flask API Container App..."
+az containerapp up \
+  --name "$FLASK_APP" \
+  --resource-group "$RG" \
+  --environment "$ENV" \
+  --image "$FLASK_IMAGE" \
+  --registry-server "$ACR.azurecr.io" \
+  --registry-username "$ACR" \
+  --registry-password "$(az acr credential show --name "$ACR" --query "passwords[0].value" -o tsv)" \
+  --target-port 5000 \
+  --ingress external \
+  --min-replicas 0 \
+  --max-replicas 3 \
+  --cpu 0.5 \
+  --memory 1Gi 2>/dev/null || {
+    echo "--> Container app exists, updating image..."
+    az containerapp update \
+      --name "$FLASK_APP" \
+      --resource-group "$RG" \
+      --image "$FLASK_IMAGE" 2>/dev/null || true
+  }
 
-# 8. Setup .env file
-echo "--> Setting up environment configuration..."
-if [ ! -f .env ]; then
-    echo "Creating a new .env file from template..."
-    cat <<EOT > .env
-# Google OAuth Credentials
-# Replace these placeholder values with your real credentials from Google Cloud Console
-GOOGLE_CLIENT_ID=your_real_google_client_id
-GOOGLE_CLIENT_SECRET=your_real_google_client_secret
-EOT
-    echo ".env template created. Please edit it to add your real Google OAuth Credentials before launching."
-else
-    echo ".env file already exists. Skipping template creation."
-fi
-
+echo ""
 echo "============================================="
-echo "Setup completed successfully!"
+echo "Deployment completed!"
+echo ""
+echo "Services:"
+echo "  Java Backend: https://$JAVA_APP.thankfulwave-027f5c02.centralindia.azurecontainerapps.io"
+echo "  Flask API:    https://$FLASK_APP.thankfulwave-027f5c02.centralindia.azurecontainerapps.io"
+echo ""
+echo "Custom Domain (if DNS configured):"
+echo "  https://stableroomie.ssnce.dev"
+echo ""
 echo "Next Steps:"
-echo "1. Edit the '.env' file using: nano .env"
-echo "2. Add your real GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET."
-echo "3. Run: docker compose up -d --build"
+echo "  1. Configure environment variables (DB, OAuth) via Azure Portal or CLI"
+echo "  2. Set up custom domain: see AZURE_DEPLOYMENT.md Step 6"
+echo "  3. Update Google OAuth redirect URIs"
 echo "============================================="
