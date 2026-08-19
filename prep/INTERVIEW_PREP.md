@@ -4,16 +4,16 @@
 
 ## 1. PROJECT OVERVIEW (Elevator Pitch)
 
-**StableRoomie** is a **full-stack hostel room allocation system** for SSN College of Engineering. It uses a **hybrid roommate matching algorithm** combining **Gale-Shapley stable matching** (for students with preferred roommates) and **Louvain community detection** (for the remaining students), along with greedy and KDTree fallback strategies.
+**StableRoomie** is a **full-stack hostel room allocation system** for SSN College of Engineering. It uses a **hybrid roommate matching algorithm** combining **mutual preference matching** (for students with preferred roommates) and **Louvain community detection** (for the remaining students).
 
 ### One-liner for interviews:
-> "StableRoomie is a full-stack web application that uses Gale-Shapley stable matching for preferred roommate pairs and Louvain community detection for the rest, to optimally assign students to hostel rooms based on lifestyle preferences — built with Spring Boot, Flask (Python), PostgreSQL, and vanilla JavaScript."
+> "StableRoomie is a full-stack web application that uses mutual preference matching for preferred roommate pairs and Louvain community detection for the rest, to optimally assign students to hostel rooms based on lifestyle preferences — built with Spring Boot, Flask (Python), PostgreSQL, and vanilla JavaScript."
 
 ### Key Highlights:
 - **Microservices architecture**: Spring Boot (Java) for backend + Flask (Python) for algorithm
 - **OAuth2/Google SSO** authentication with domain restriction
 - **Role-based access** (Admin vs Student)
-- **Hybrid Matching Algorithm** — Gale-Shapley for preferred roommates + Louvain community detection for remaining students
+- **Hybrid Matching Algorithm** — Mutual preference matching for preferred roommates + Louvain community detection for remaining students
 - **Deployed** on Azure VM with Docker Compose (Spring Boot, Flask, PostgreSQL, Caddy)
 - **Docker** containerized with CI/CD
 
@@ -42,9 +42,9 @@
                         ▼
 ┌─────────────────────────────────────────────────────────┐
 │              FLASK API (Python 3.12)                      │
-│  - /allot endpoint — Gale-Shapley + Louvain hybrid algo  │
-│  - Reads students directly from PostgreSQL               │
-│  - Port: 5001                                            │
+│  - /allot_roommates endpoint — Mutual pref + Louvain     │
+│  - Receives students from Spring Boot via HTTP            │
+│  - Port: 5000                                            │
 └───────────────────────┬─────────────────────────────────┘
                         │
                         ▼
@@ -152,18 +152,17 @@ timestamp (TIMESTAMP)
 
 ---
 
-## 5. CORE ALGORITHM — HYBRID MATCHING (GALE-SHAPLEY + LOUVAIN)
+## 5. CORE ALGORITHM — HYBRID MATCHING (MUTUAL PREFERENCE + LOUVAIN)
 
 ### Overview:
-The algorithm uses a **hybrid 4-pass approach**:
-- **Gale-Shapley style stable matching** handles students who specified preferred roommates
+The algorithm uses a **2-pass approach**:
+- **Mutual preference matching** handles students who specified preferred roommates
 - **Louvain community detection** handles the remaining students by finding natural compatibility clusters
-- Greedy and KDTree fallbacks ensure nearly 100% assignment rate
 
-### Pass 1 — Gale-Shapley Style Mutual Preference Matching:
+### Pass 1 — Mutual Preference Matching:
 ```python
-# Students who filled preferred roommates get matched via stable matching logic
-# Similar to Gale-Shapley: each student "proposes" to their preferred roommates,
+# Students who filled preferred roommates get matched via mutual preference logic
+# Each student "proposes" to their preferred roommates,
 # and only mutual acceptance (both sides listed each other) forms a group
 for student in students:
     pref_names = student.get("preferredRoommates", "").split(",")
@@ -171,7 +170,7 @@ for student in students:
     # If mutual group of size C found → assign immediately (stable match)
 ```
 
-This is analogous to **Gale-Shapley** — students who mutually prefer each other form stable pairs/groups. No student in a mutually-preferred group would want to swap, guaranteeing stability for these assignments.
+Students who mutually prefer each other form stable pairs/groups. No student in a mutually-preferred group would want to swap, guaranteeing stability for these assignments.
 
 ### Pass 2 — Louvain Community Detection (for remaining students):
 ```python
@@ -192,32 +191,12 @@ partition = community_louvain.best_partition(G, weight="weight")
 **Louvain** optimizes **modularity** — it finds groups where students are more compatible with each other than with the rest of the graph. Each community is then divided into rooms of size C.
 
 ### Why Both Algorithms?
-- **Gale-Shapley** (Pass 1): Best for students who **already know** their preferred roommates — produces guaranteed stable matches
+- **Mutual Preference Matching** (Pass 1): Best for students who **already know** their preferred roommates — produces guaranteed stable matches
 - **Louvain** (Pass 2): Best for students who **didn't specify** preferences — discovers latent compatibility clusters from lifestyle data
 - Together they handle both **explicit preferences** and **implicit compatibility**
 
-### Pass 3 — Greedy Compatibility Matching:
-```python
-# For students not caught by community detection
-# Greedily match highest-compatibility pairs
-while len(remaining) >= C:
-    anchor = remaining[0]
-    candidates = sorted(compat_graph[anchor], key=lambda x: -x[1])
-    # Pick top C-1 compatible unassigned students
-```
-
-### Pass 4 — KDTree Nearest-Neighbour (Fallback):
-```python
-from sklearn.neighbors import KDTree
-import numpy as np
-
-# Convert student attributes to numerical vectors
-vectors = [[sleep, wake, noise, light, cleanliness, study] for s in students]
-tree = KDTree(np.array(vectors))
-
-# For each leftover student, find C-1 nearest neighbours
-dist, idxs = tree.query([vectors[i]], k=C)
-```
+### Leftover Handling:
+Students not fully assigned by Pass 1 or Pass 2 (fewer than room capacity remaining) are grouped together as leftovers.
 
 ### Compatibility Scoring Function:
 ```python
@@ -276,6 +255,16 @@ Controller → Service → Repository → Database
 #### `categoryController` — CRUD for student categories
 #### `roomsController` — CRUD for room types
 #### `DashboardController` — Serves main page, user info, process page
+
+#### Flask API Endpoints (`flask-api/app.py`)
+- `GET /` — Health check
+- `GET /health` — Health check (alternative)
+- `POST /allot_roommates` — Run the roommate matching algorithm
+  - Receives filter data (category, location, capacity) from Spring Boot
+  - Fetches filtered students from Java backend via `POST /getStudents`
+  - Runs 2-pass algorithm (mutual preference + Louvain community detection)
+  - Calls back to Spring Boot's `POST /save-groups` to persist results
+  - Returns grouped student assignments + room type
 
 ### Security Configuration:
 ```java
@@ -459,15 +448,13 @@ cloudb.site {
 
 ### Q: "Explain the room allocation algorithm."
 **A**: We use a **hybrid algorithm** combining two complementary strategies:
-1. **Gale-Shapley stable matching**: Students who specified preferred roommates get matched via mutual preference logic — if A lists B and B lists A, they're stably paired. No student would want to swap.
-2. **Louvain community detection**: For students without preferred roommates, we build a weighted compatibility graph (NetworkX) and run Louvain modularity optimization to find natural clusters of compatible students, then split each cluster into rooms.
-3. **Greedy compatibility**: Students not caught by community detection are greedily matched by highest compatibility score.
-4. **KDTree nearest-neighbour**: Last-resort fallback for hard-to-match leftovers.
+1. **Mutual preference matching**: Students who specified preferred roommates get matched via mutual preference logic — if A lists B and B lists A, they're stably paired. No student would want to swap.
+2. **Louvain community detection**: For students without preferred roommates, we build a weighted compatibility graph (NetworkX) and run Louvain modularity optimization to find natural clusters of compatible students, then split each cluster into rooms. Remaining leftovers are grouped together.
 
-The key insight: **Gale-Shapley handles explicit preferences** (students who already know who they want), while **Louvain handles implicit compatibility** (discovers hidden compatibility clusters from lifestyle data).
+The key insight: **Mutual preference matching handles explicit preferences** (students who already know who they want), while **Louvain handles implicit compatibility** (discovers hidden compatibility clusters from lifestyle data).
 
-### Q: "Why use both Gale-Shapley and Louvain instead of just one?"
-**A**: They solve different problems. Gale-Shapley produces **stable matches** for students with explicit roommate preferences — no one would want to swap. But it doesn't work well for students without preferences. Louvain discovers **latent compatibility clusters** from lifestyle attributes (sleep schedule, study habits, cleanliness, etc.), which naturally map to room groups. Using both ensures we respect student choices AND maximize overall compatibility for everyone else.
+### Q: "Why use both mutual preference matching and Louvain instead of just one?"
+**A**: They solve different problems. Mutual preference matching produces **stable matches** for students with explicit roommate preferences — no one would want to swap. But it doesn't work well for students without preferences. Louvain discovers **latent compatibility clusters** from lifestyle attributes (sleep schedule, study habits, cleanliness, etc.), which naturally map to room groups. Using both ensures we respect student choices AND maximize overall compatibility for everyone else.
 
 ### Q: "How does authentication work?"
 **A**: Google OAuth2 via Spring Security. The flow:
@@ -500,6 +487,9 @@ Spring Boot uses JPA for all other CRUD. This hybrid approach gives us ORM conve
 4. **Backend**: Horizontal scaling with load balancer (Spring Boot is stateless)
 5. **Caching**: Redis for session storage, cached category/room lists
 6. **Message Queue**: RabbitMQ/Kafka for async allotment processing
+
+### Q: "Tell me about the Flask microservice."
+**A**: The Flask API is a dedicated Python microservice responsible solely for the roommate matching algorithm. Spring Boot calls it via HTTP (`POST /allot_roommates`) when an admin triggers allotment. Flask receives the student data, runs the 2-pass algorithm (mutual preference + Louvain community detection), and calls back to Spring Boot's `/save-groups` endpoint to persist the results. This separation allows us to use Python's rich ecosystem (NetworkX, community-louvain) for the algorithm while keeping the main backend in Java/Spring Boot.
 
 ### Q: "What would you improve?"
 **A**:
@@ -563,7 +553,8 @@ Spring Boot uses JPA for all other CRUD. This hybrid approach gives us ORM conve
 | Method | Path | Description |
 |--------|------|-------------|
 | GET | `/` | Health check |
-| POST | `/allot` | Run allotment algorithm |
+| GET | `/health` | Health check (alternative) |
+| POST | `/allot_roommates` | Run roommate matching algorithm (mutual pref + Louvain) |
 
 ---
 
@@ -588,7 +579,7 @@ Spring Boot uses JPA for all other CRUD. This hybrid approach gives us ORM conve
 - Git, GitHub
 
 ### Concepts:
-- Hybrid Matching (Gale-Shapley Stable Matching + Louvain Community Detection)
+- Hybrid Matching (Mutual Preference Matching + Louvain Community Detection)
 - Microservices Architecture
 - OAuth2 / OpenID Connect
 - RESTful API Design
@@ -609,6 +600,6 @@ Spring Boot uses JPA for all other CRUD. This hybrid approach gives us ORM conve
 - **6 compatibility dimensions** (sleep, wake, study habits, cleanliness, noise, light)
 - **Maximum compatibility score**: 100 points
 - **Algorithm complexity**: O(N²) per student group
-- **Hybrid algorithm**: Gale-Shapley (preferred roommates) + Louvain (remaining) + Greedy + KDTree
+- **Hybrid algorithm**: Mutual preference matching (preferred roommates) + Louvain community detection (remaining)
 - **1 deployment platform**: Azure VM with Docker Compose
 - **4 Docker containers**: Spring Boot, Flask, PostgreSQL, Caddy

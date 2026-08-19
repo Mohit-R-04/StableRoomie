@@ -1,8 +1,6 @@
 import networkx as nx
 import community as community_louvain
 from collections import defaultdict
-from sklearn.neighbors import KDTree
-import numpy as np
 
 
 def sleep_hour(time_str):
@@ -174,76 +172,10 @@ def allotment(students, capacity=3):
                 groups.append(group)
                 assigned.update(group)
                 members = members[C:]
-            # Remaining members go back for pass 3
+            # Remaining members go to leftovers
             for rem in members:
                 if rem in G:
                     G.remove_node(rem)
-
-    # --- Pass 3: Greedy compatibility matching for remaining ---
-    remaining = [s for s in students if s["studentId"] not in assigned]
-    remaining_ids = [s["studentId"] for s in remaining]
-
-    compat_graph = defaultdict(list)
-    for i in range(len(remaining)):
-        for j in range(i + 1, len(remaining)):
-            s1 = remaining[i]
-            s2 = remaining[j]
-            score = compatibility(s1, s2, students)
-            if score > 0:
-                compat_graph[s1["studentId"]].append((s2["studentId"], score))
-                compat_graph[s2["studentId"]].append((s1["studentId"], score))
-
-    while len(remaining_ids) >= C:
-        anchor = remaining_ids[0]
-        candidates = sorted(compat_graph[anchor], key=lambda x: -x[1])
-        picks = []
-        for cid, _ in candidates:
-            if cid in remaining_ids and cid != anchor:
-                picks.append(cid)
-            if len(picks) == C - 1:
-                break
-        if len(picks) == C - 1:
-            group = [anchor] + picks
-            groups.append(group)
-            for sid in group:
-                remaining_ids.remove(sid)
-                assigned.add(sid)
-        else:
-            break
-
-    # --- Pass 4: KDTree nearest-neighbour for hard-to-match leftovers ---
-    study_habits_map = {"silent": 0, "music": 1, "group": 2}
-    noise_map = {"silent": 0, "low": 1, "moderate": 2}
-    light_map = {"no-light": 0, "any-light": 1}
-    cleanliness_map = {"casual": 0, "moderately-clean": 1, "very-clean": 2}
-
-    leftover_students = [student_map[sid] for sid in remaining_ids if sid in student_map]
-    if leftover_students:
-        vectors = []
-        id_list = []
-        for s in leftover_students:
-            vectors.append([
-                sleep_hour(s["sleepTime"]),
-                wake_hour(s["wakeTime"]),
-                noise_map.get(s.get("noiseLevel", "low"), 1),
-                light_map.get(s.get("lightSensitivity", "any-light"), 1),
-                cleanliness_map.get(s.get("cleanliness", "casual"), 0),
-                study_habits_map.get(s.get("studyHabits", "silent"), 0),
-            ])
-            id_list.append(s["studentId"])
-
-        tree = KDTree(np.array(vectors))
-        visited = set()
-        for i in range(len(id_list)):
-            if id_list[i] in visited:
-                continue
-            k = min(C, len(vectors))
-            dist, idxs = tree.query([vectors[i]], k=k)
-            group_ids = [id_list[j] for j in idxs[0] if id_list[j] not in visited]
-            if len(group_ids) == C:
-                groups.append(group_ids)
-                visited.update(group_ids)
-                assigned.update(group_ids)
 
     # --- Collect absolute leftovers (fewer than C remaining) ---
     leftover = [s for s in students if s["studentId"] not in assigned]
