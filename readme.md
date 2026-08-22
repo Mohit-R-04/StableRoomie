@@ -2,7 +2,7 @@
 
 StableRoomie is a web-based hostel roommate recommendation and allotment system. Students authenticate with Google, submit lifestyle preferences and up to three room-type preferences, and view their final room and roommates. Administrators (the warden) configure room types with the total number of rooms available, then run a single **Lock & Allot** step that finalizes the allotment for every student and locks all preference changes.
 
-The application uses a Spring Boot web application as its main entry point, a Flask microservice for the two-phase graph-based roommate matching, and an H2 or PostgreSQL database for persistence.
+The application uses a Spring Boot web application as its main entry point, a Flask microservice for the two-phase graph-based roommate matching, and Neon serverless PostgreSQL for persistence (a local PostgreSQL 14 also works).
 
 ## Table of Contents
 
@@ -83,7 +83,7 @@ Manual hostel-room allocation does not naturally account for lifestyle compatibi
 | Matching service | Python 3.10 image, Flask 3.1.1 | [`flask-api/Dockerfile`](flask-api/Dockerfile), [`requirements.txt`](flask-api/requirements.txt) |
 | Graph processing | NetworkX 3.2.1, python-louvain 0.16 | [`allot.py`](flask-api/service/allot.py) |
 | HTTP between services | Spring `RestTemplate`, Python `requests` | Java `AllotmentService` and Flask app |
-| Development DB | File-backed H2 in PostgreSQL compatibility mode; the local `.env` points at Neon serverless PostgreSQL | [`application.properties`](StableRoomie/src/main/resources/application.properties) |
+| Development DB | Neon serverless PostgreSQL (pooler endpoint) — required, no H2 fallback | [`application.properties`](StableRoomie/src/main/resources/application.properties) |
 | Container DB | None — the Compose stack connects directly to Neon serverless PostgreSQL | [`docker-compose.yml`](docker-compose.yml) |
 | Packaging | Maven, JAR, Gunicorn | Java and Flask Dockerfiles |
 | Local reverse proxy | Caddy 2 | [`Caddyfile`](Caddyfile) |
@@ -124,12 +124,10 @@ StableRoomie/
 │       └── test/java/in/edu/ssn/hostel/
 │           └── service/AllotmentServiceTest.java
 └── flask-api/
-    ├── app.py                        # Active Flask application
-    ├── app_temp.py                   # Legacy development variant (unused)
+    ├── app.py                        # Flask application
     ├── requirements.txt
     ├── Dockerfile
     ├── Dockerfile.deploy
-    ├── model/students.py             # Unused legacy model
     └── service/allot.py              # Two-phase matching algorithm
 ```
 
@@ -158,7 +156,7 @@ flowchart LR
         MATCH[Mutual Preference + Compatibility Graph + Louvain]
     end
 
-    DB[(H2 or PostgreSQL)]
+    DB[(Neon PostgreSQL)]
 
     U --> C
     C --> SEC
@@ -200,7 +198,7 @@ Spring Boot owns identity, HTTP sessions, UI delivery, validation/orchestration,
 ### 6.2 Student preference submission
 
 1. The warden opens the **preference-selection window** (Lock & Allot screen → "Open Preference Selection"). Until then, `/saveStudents` rejects every submission and the student form is disabled with a "not opened yet" banner.
-2. The student fills the preference form: name, student ID, college, department, year, contact details, lifestyle preferences, location, preferred roommates, and **1st/2nd/3rd room-type preferences**.
+2. The student fills the preference form: name, student ID (digital ID), college, department, year, contact details, lifestyle preferences, location, preferred roommates (by digital ID), and **1st/2nd/3rd room-type preferences**.
 3. `allotment.js` sends `POST /saveStudents` (no client-side timestamp — the server sets `createdAt`/`updatedAt`).
 4. `StudentController` overwrites the email with the authenticated OAuth email.
 5. If the allotment is locked (any group exists) or the student already has an allotment, HTTP 400 is returned with the locked message; if the preference window is closed, HTTP 400 is returned with the not-opened message.
@@ -277,15 +275,24 @@ For every pair of unassigned students, the algorithm adds these contributions:
 | Preferred roommate | Mutual: 1.0; one-way: 0.5 | 1.0 |
 | **Maximum implemented pair score** | All maximum rules satisfied | **3.0** |
 
-Sleep times after midnight are linearized (`12:00 AM` → 24, `1:00 AM` → 25, ...). Invalid sleep/wake values default to 10 PM / 7 AM. Preferred roommates are stored as comma-separated names and resolved to student IDs; duplicate names make resolution ambiguous.
+Sleep times after midnight are linearized (`12:00 AM` → 24, `1:00 AM` → 25, ...). Invalid sleep/wake values default to 10 PM / 7 AM. Preferred roommates are stored as comma-separated **digital IDs** (the student IDs entered on the preference form), so resolution is exact — there is no name-ambiguity problem. Non-numeric tokens and IDs that do not exist are ignored.
 
 ### 7.3 Two-phase grouping
 
-**Pass 1 — fully mutual requested groups:** for each unassigned student, combinations of `C - 1` preferred roommates are checked; the first combination where every member lists every other member is accepted as a group of size `C`.
+**Pass 1 — fully mutual requested groups (full groups only):** for each unassigned student who lists at least `C - 1` preferred roommates (as digital IDs), combinations of `C - 1` of those IDs are checked; the first combination where every member lists every other member is accepted as a group of **exactly** `C` students. Pass 1 never creates a smaller group: two students who mutually prefer each other but list no third roommate do **not** form a pair-group — each needs `C - 1` (= 2, for a 3-sharing room) mutual preferences. Such pairs simply stay in the pool; Pass 2 keeps them together because their mutual-preference edge scores 1.0.
 
-**Pass 2 — Louvain communities:** all remaining students become nodes of a weighted graph (edges only when compatibility > 0); `community_louvain.best_partition()` finds communities; each community is chunked into groups of `C`; any leftover students are chunked into a final (possibly partial) group.
+**Pass 2 — Louvain communities:** all remaining students become nodes of a weighted graph (edges only when compatibility > 0); `community_louvain.best_partition()` finds communities; each community is chunked into groups of `C`; each community's remainder (1 to `C - 1` students) joins a shared leftover pool.
+
+**Final — one partial group:** the leftover pool (all community remainders combined) is chunked into groups of `C`. Because it is a single list, this yields **exactly one final group** of size `n mod C` (1 to `C - 1`) — the only partial group in the list. Examples with capacity 3: 8 students → `3 + 3 + 2`; 7 students → `3 + 3 + 1`.
 
 Because Spring Boot sorts each list by department before calling Flask, same-department students are adjacent and therefore tend to land in the same chunks/rooms, satisfying "same department students will get allotted together".
+
+### 7.4 Group size and room-count rules
+
+- **Every group is one room.** A full group, a 2-member group, or a lone 1-member group each creates one `room_groups` row and consumes one room from that type's `totalRooms`.
+- **Groups per list = `ceil(n / C)` exactly** (verified against the implementation, including the mutual-pair scenario above). Because Spring caps each list at `totalRooms × capacity`, `usedRooms` for a type can never exceed the warden's configured `totalRooms`.
+- **Partial rooms are normal:** 8 students in a 3-sharing type use 3 rooms with one bed empty; 7 students use 3 rooms with one student alone. The warden's room count is the hard ceiling — not the bed count.
+- **Overflow creates rooms in other types:** students who do not fit into their 1st-choice list (it reached `totalRooms × capacity`) spill into their 2nd/3rd choice types, and every spill group — even a single student — consumes a room in that other type. So when more students want a type than its capacity allows, the results can show more total rooms than the warden planned for one type alone.
 
 ## 8. Database Design
 
@@ -293,7 +300,7 @@ Because Spring Boot sorts each list by department before calling Flask, same-dep
 
 - Hibernate manages schema creation/update with `ddl-auto=update`.
 - There is no Flyway or Liquibase migration history.
-- Development defaults to a file-backed H2 database; the Compose stack and the local `StableRoomie/.env` both connect to Neon serverless PostgreSQL (pooler endpoint).
+- Every environment connects to Neon serverless PostgreSQL (pooler endpoint) through the `DB_*` env vars — there is no H2 fallback. The integration test suite runs against a separate disposable Neon database (`stableromie_test`, via `TEST_DB_URL`), see §13.6.
 - No seed data is shipped or auto-executed — the application starts with empty tables.
 - `import.sql` contains no executable seed data.
 
@@ -342,9 +349,8 @@ erDiagram
     }
 
     ALLOTMENT {
-        bigint allotment_id PK
-        bigint group_id
-        int student_id UK
+        bigint group_id PK
+        int student_id PK, UK
     }
 
     ROOMS ||--o{ ROOM_GROUPS : "logical room_id (room type)"
@@ -375,7 +381,7 @@ erDiagram
 | `cleanliness` | `String` | Used by matcher |
 | `light_sensitivity` | `String` | Used by matcher |
 | `noise_level` | `String` | Used by matcher |
-| `preferred_roommates` | `String` | Comma-separated names |
+| `preferred_roommates` | `String` | Comma-separated digital IDs (student IDs) of preferred roommates |
 | `location` | `String` | Chennai/non-Chennai value |
 | `address` | `String` | Student address |
 | `emergency_contact` | `String` | Emergency phone/contact |
@@ -398,15 +404,14 @@ erDiagram
 | `group_id` | `Long` | Identity primary key; one row per occupied room |
 | `room_id` | `Long` | Logical reference to the rooms row = the room **type** |
 
-The physical table is named `room_groups` because `groups` is a reserved SQL keyword in PostgreSQL/H2.
+The physical table is named `room_groups` because `groups` is a reserved SQL keyword in PostgreSQL.
 
 #### `allotment`
 
 | Column | Java type | Constraint/meaning |
 |---|---|---|
-| `allotment_id` | `Long` | Identity primary key |
-| `group_id` | `Long` | Logical reference to a room_groups row (room) |
-| `student_id` | `Integer` | Logical reference to a student; UNIQUE across the table (one active allotment per student) |
+| `group_id` | `Long` | Part of the composite primary key; logical reference to a room_groups row (room) |
+| `student_id` | `Integer` | Part of the composite primary key; logical reference to a student; UNIQUE across the table (one active allotment per student) |
 
 #### `settings`
 
@@ -488,7 +493,7 @@ Request shape:
   "cleanliness": "moderately-clean",
   "lightSensitivity": "No",
   "noiseLevel": "Low",
-  "preferredRoommates": "Student Two, Student Three",
+  "preferredRoommates": "1002, 1003",
   "location": "chennai",
   "address": "Address",
   "emergencyContact": "9000000001"
@@ -651,11 +656,12 @@ For production, use role authorities, route authorization, CSRF protection, rest
 |---|---|---|---|
 | `GOOGLE_CLIENT_ID` | Yes for OAuth | None | Google OAuth client ID |
 | `GOOGLE_CLIENT_SECRET` | Yes for OAuth | None | Google OAuth client secret |
-| `DB_URL` | No | `jdbc:h2:file:./data/stableromie;DB_CLOSE_ON_EXIT=FALSE;MODE=PostgreSQL` | JDBC URL (local `.env` uses the Neon pooler URL, see §13.3) |
-| `DB_USERNAME` | No | `sa` | Database user |
-| `DB_PASSWORD` | No | Empty | Database password |
-| `DB_DRIVER` | No | `org.h2.Driver` | JDBC driver |
-| `DB_DIALECT` | No | `org.hibernate.dialect.H2Dialect` | Hibernate dialect |
+| `DB_URL` | Yes | None — Neon pooler JDBC URL (see §13.2) | JDBC URL; the app fails fast without it |
+| `DB_USERNAME` | Yes | None | Database user (`neondb_owner` for Neon) |
+| `DB_PASSWORD` | Yes | None | Database password |
+| `DB_DRIVER` | No | `org.postgresql.Driver` | JDBC driver |
+| `DB_DIALECT` | No | `org.hibernate.dialect.PostgreSQLDialect` | Hibernate dialect |
+| `TEST_DB_URL` | No (tests only) | None — `stableromie_test` Neon pooler URL | Test-suite database; its tables are wiped on every test run (see §13.6) |
 | `FLASK_API_URL` | No | `http://127.0.0.1:5000` | Flask base URL |
 | `ADMIN_EMAIL` | No | `mohit2310893@ssn.edu.in` | The single account that gets the ADMIN dashboard |
 
@@ -675,7 +681,22 @@ The app uses spring-dotenv, which loads a `.env` file from the **working directo
 
 - Java 17, Maven, Python 3, Google OAuth client credentials, and a Neon serverless database (the current setup; a local PostgreSQL 14 also works).
 
-### 13.2 Option A: Spring Boot with default H2 and Flask
+### 13.2 Option A: Spring Boot with Neon serverless and Flask (default)
+
+Neon is required — the application has no built-in fallback database. Set the
+`DB_*` variables (or rely on `StableRoomie/.env`, which ships with Neon values):
+
+```bash
+export DB_URL="jdbc:postgresql://<your-pooler-host>/neondb?sslmode=require&channelBinding=require"
+export DB_USERNAME="neondb_owner"
+export DB_PASSWORD="<neon-password>"
+export DB_DRIVER="org.postgresql.Driver"
+export DB_DIALECT="org.hibernate.dialect.PostgreSQLDialect"
+```
+
+`ddl-auto=update` creates the schema on first boot and tables start empty (no
+seed data, see §8.4). Both `.env` files are gitignored, so credentials stay out
+of version control.
 
 Terminal 1:
 
@@ -702,25 +723,19 @@ python3 app.py
 > run Flask on another port and start Java with `FLASK_API_URL` pointing at
 > it, e.g. `FLASK_API_URL=http://127.0.0.1:5001`.
 
-Open `http://localhost:8080`.
+Open `http://localhost:8080`. On a fresh Neon database the preference-selection
+window defaults **closed** (open it under Lock & Allot → 📢 Preference Selection
+Window before students can submit). The Docker Compose stack
+(`docker compose up --build`) has **no local PostgreSQL container** —
+`java-backend` interpolates the same `DB_*` and `GOOGLE_*` values from the root
+`.env` and connects straight to Neon.
 
-### 13.3 Option B: PostgreSQL (local or Neon serverless)
+### 13.3 Option B: local PostgreSQL 14
 
-**Local:** create the `stableromie` database, then start Java with `DB_URL`, `DB_USERNAME`, `DB_PASSWORD`, `DB_DRIVER=org.postgresql.Driver`, and `DB_DIALECT=org.hibernate.dialect.PostgreSQLDialect` set, plus the OAuth and Flask variables.
-
-**Neon (serverless):** point `DB_URL` (and `SPRING_DATASOURCE_URL`) at the Neon **pooler** JDBC URL with `?sslmode=require&channelBinding=require` and the `neondb_owner` credentials. `ddl-auto=update` creates the schema on first boot and tables start empty (no seed data, see §8.4). Both `.env` files are gitignored, so DB credentials stay out of version control.
-
-```bash
-export DB_URL="jdbc:postgresql://<your-pooler-host>/neondb?sslmode=require&channelBinding=require"
-export DB_USERNAME="neondb_owner"
-export DB_PASSWORD="<neon-password>"
-export DB_DRIVER="org.postgresql.Driver"
-export DB_DIALECT="org.hibernate.dialect.PostgreSQLDialect"
-```
-
-On a fresh Neon database the preference-selection window defaults **closed** (open it under Lock & Allot → 📢 Preference Selection Window before students can submit).
-
-The Docker Compose stack (`docker compose up --build`) has **no local PostgreSQL container** — `java-backend` interpolates `DB_URL`/`DB_USERNAME`/`DB_PASSWORD`/`DB_DRIVER`/`DB_DIALECT` and the `GOOGLE_*` values from the root `.env` and connects straight to Neon.
+Create the `stableromie` database, then start Java with the same `DB_*`
+variables pointing at `localhost:5432` (`DB_DRIVER=org.postgresql.Driver`,
+`DB_DIALECT=org.hibernate.dialect.PostgreSQLDialect`), plus the OAuth and Flask
+variables.
 
 ### 13.4 No seed data
 
@@ -745,12 +760,23 @@ Expected unauthenticated Java response:
 
 ### 13.6 Running tests
 
+Tests run against Neon like the application itself — no in-memory database. They
+use `TEST_DB_URL` (from `.env`), which must point at a **disposable** database:
+every test wipes the `student`, `rooms`, `room_groups`, `allotment` tables.
+Create the dedicated test database once (via the Neon console or psql), then:
+
 ```bash
+psql "postgresql://neondb_owner:<NEON_PASSWORD>@<POOLER_HOST>/neondb?sslmode=require" -c "CREATE DATABASE stableromie_test;"
 cd StableRoomie
 mvn test
 ```
 
-`AllotmentServiceTest` verifies the Lock & Allot pipeline end to end against an in-memory H2 database and a stub Flask endpoint: preference fill by update time, department-sorted two-phase grouping, persistence into `room_groups` + `allotment`, unallotted reporting, missing-`totalRooms` rejection, double-run rejection, and reset-and-rerun.
+`AllotmentServiceTest` verifies the Lock & Allot pipeline end to end against
+`stableromie_test` and a stub Flask endpoint on 127.0.0.1:5999: preference fill
+by update time, department-sorted two-phase grouping, persistence into
+`room_groups` + `allotment`, unallotted reporting, missing-`totalRooms`
+rejection, double-run rejection, and reset-and-rerun. Never point `TEST_DB_URL`
+at the dev/production database — the test suite deletes all rows in it.
 
 ## 14. Error Handling and Edge Cases
 
@@ -767,7 +793,7 @@ mvn test
 | Preferred room type not configured | That preference is skipped; next one tried |
 | Student fits into no list | Reported as unallotted in results/PDF; no `allotment` row |
 | Total capacity < total students | Overflow students remain unallotted |
-| List size not divisible by capacity | Final room is partially filled (as in the legacy behavior) |
+| List size not divisible by capacity | Exactly one final partial room (e.g. 2 members in a 3-sharing room, or even 1); total rooms = `ceil(list size / capacity)`, still ≤ `totalRooms` |
 | Flask unreachable | Lock & Allot fails with 500; transaction rolls back, nothing persisted |
 | Flask response malformed | Lock & Allot fails with 500; nothing persisted |
 
@@ -780,11 +806,10 @@ mvn test
 5. **Student ID is client-controlled** and acts as the primary key, allowing accidental overwrite of another row.
 6. **CSRF disabled** while session cookies authenticate mutations; CORS unrestricted.
 7. **Room deletion while groups exist** can orphan groups (mutations are blocked while locked, but resetting + deleting a used type can still orphan historical rows).
-8. **Preferred-roommate names are ambiguous** when names are duplicated.
+8. ~~Preferred-roommate names were ambiguous when duplicated~~ — **fixed:** `preferred_roommates` now stores digital IDs (student IDs), so resolution is exact (see §7.2).
 9. **No database migrations** — Hibernate `ddl-auto=update` manages the schema; automated coverage is limited to the integration test for the allotment pipeline ([`AllotmentServiceTest`](StableRoomie/src/test/java/in/edu/ssn/hostel/service/AllotmentServiceTest.java)).
-10. **Dead code remains** — `flask-api/app_temp.py`, `flask-api/model/students.py`, and several unused Python dependencies.
-11. **MongoDB starter** is declared but auto-configuration is excluded and no MongoDB code is used.
-12. **Secrets need operational review** — local environment files may contain credentials; keep only placeholders in version control.
+10. **MongoDB starter** is declared but auto-configuration is excluded and no MongoDB code is used.
+11. **Secrets need operational review** — local environment files may contain credentials; keep only placeholders in version control.
 
 ## 16. Improvement Roadmap
 
@@ -811,7 +836,7 @@ mvn test
 
 ### Phase 4: Matching and scale
 
-1. Use student IDs instead of names for roommate preferences.
+1. ~~Use student IDs instead of names for roommate preferences~~ — **done:** `preferredRoommates` stores digital IDs.
 2. Optimize fixed-size grouping inside Louvain communities (currently naive chunking).
 3. Add deterministic tie-breaking and reproducible seeds.
 4. Run allotment asynchronously with retries/timeouts if lists grow large.

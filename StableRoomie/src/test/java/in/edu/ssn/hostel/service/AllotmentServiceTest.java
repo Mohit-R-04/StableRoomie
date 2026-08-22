@@ -32,11 +32,13 @@ import in.edu.ssn.hostel.repo.studentRepo;
  * Verifies the Lock & Allot pipeline end to end (preference fill by update
  * time, department-sorted two-phase grouping via the Flask stub, persistence
  * into room_groups + allotment, unallotted reporting, and reset).
+ *
+ * Runs against Neon, like the application itself: the datasource comes from
+ * TEST_DB_URL (see StableRoomie/.env), which must point at a disposable
+ * database (e.g. stableromie_test) because every test wipes its tables.
  */
 @SpringBootTest(properties = {
-        "spring.datasource.url=jdbc:h2:mem:srtest;DB_CLOSE_DELAY=-1;MODE=PostgreSQL",
-        "spring.datasource.driver-class-name=org.h2.Driver",
-        "spring.jpa.hibernate.ddl-auto=create-drop",
+        "spring.datasource.url=${TEST_DB_URL}",
         "spring.security.oauth2.client.registration.google.client-id=dummy",
         "spring.security.oauth2.client.registration.google.client-secret=dummy",
         "FLASK_API_URL=http://127.0.0.1:5999"
@@ -99,6 +101,8 @@ class AllotmentServiceTest {
 
     @BeforeEach
     void cleanDb() {
+        // Wipes every table in the TEST_DB_URL database before each test —
+        // this must never point at the dev/production database.
         arepo.deleteAll();
         grepo.deleteAll();
         srepo.deleteAll();

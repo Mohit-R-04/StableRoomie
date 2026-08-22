@@ -57,10 +57,15 @@ def study_habit_score(habit1, habit2):
 
 
 def get_preferred_ids(student, students):
-    """Return list of studentIds that this student listed as preferred roommates."""
+    """Return list of studentIds that this student listed as preferred roommates.
+
+    preferredRoommates stores comma-separated digital IDs (student IDs),
+    e.g. "1002, 1003". Non-numeric tokens and IDs not present in the list
+    are ignored.
+    """
     raw = student.get("preferredRoommates", "") or ""
-    names = [n.strip() for n in raw.split(",") if n.strip()]
-    return [s["studentId"] for s in students if s["name"].strip() in names]
+    ids = {int(tok) for tok in raw.replace(";", ",").split(",") if tok.strip().isdigit()}
+    return [s["studentId"] for s in students if s["studentId"] in ids]
 
 
 def compatibility(s1, s2, students):
@@ -116,16 +121,16 @@ def allotment(students, capacity=3):
             continue
 
         raw = student.get("preferredRoommates", "") or ""
-        pref_names = [n.strip() for n in raw.split(",") if n.strip()]
-        if len(pref_names) < C - 1:
+        pref_tokens = [tok.strip() for tok in raw.replace(";", ",").split(",") if tok.strip().isdigit()]
+        if len(pref_tokens) < C - 1:
             continue
 
-        # Find unassigned matching student IDs
+        # Resolve preferred digital IDs to unassigned students
         pref_ids = []
-        for name in pref_names:
-            matching_id = next((s["studentId"] for s in students if s["name"].strip().lower() == name.lower()), None)
-            if matching_id and matching_id not in assigned and matching_id != student["studentId"]:
-                pref_ids.append(matching_id)
+        for tok in pref_tokens:
+            sid = int(tok)
+            if sid in student_map and sid not in assigned and sid != student["studentId"]:
+                pref_ids.append(sid)
 
         if len(pref_ids) < C - 1:
             continue

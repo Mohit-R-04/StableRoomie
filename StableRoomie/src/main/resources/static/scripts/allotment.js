@@ -20,7 +20,11 @@ document
     const roomTypePref3 = document.querySelector(".js-room-pref3").value;
     const address = document.querySelector(".js-home").value;
     const emergencyContact = document.querySelector(".js-emergency").value;
-    const roomMates = document.querySelector(".js-friends").value;
+    const roomMates = document.querySelector(".js-friends").value
+      .split(/[,;]+/)
+      .map((t) => t.trim())
+      .filter((t) => /^\d+$/.test(t))
+      .join(", ");
     const studyHabbits = document.querySelector(".js-studyHabbits").value;
     const clean = document.querySelector(".js-clean").value;
     const light = document.querySelector(".js-light").value;

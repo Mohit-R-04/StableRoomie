@@ -85,15 +85,13 @@ The Flask app runs on `http://localhost:5000` with debug mode enabled by default
 **Key Entities:**
 - `Student` - Contains personal info, preferences (sleep time, study habits, cleanliness, noise level), room requirements
 - `Groups` - Holds matched roommate groups
-- `Rooms` - Room definitions (type, capacity)
-- `Category` - Room categorization
+- `Rooms` - Room definitions (type, capacity, total rooms)
 
 ### Flask Microservice Architecture
 
 **Module Structure:**
-- `app.py` - Main Flask application with /allot_roommates endpoint
-- `model/students.py` - Student data fetching logic
-- `service/allot.py` - Core matching algorithm
+- `app.py` - Main Flask application with /allot endpoint
+- `service/allot.py` - Core matching algorithm (two-phase: mutual preferences + Louvain)
 
 **Integration Point:**
 - The `/allot_roommates` endpoint:
