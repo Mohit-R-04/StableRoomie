@@ -108,8 +108,7 @@ def allotment(students, capacity=3):
     if C == 1:
         for student in students:
             groups.append([student["studentId"]])
-        room_type = students[0]["roomType"] if students else "1-Sharing"
-        return groups, room_type
+        return groups
 
     # --- Pass 1: Mutual C-way friend preference ---
     for student in students:
@@ -183,5 +182,4 @@ def allotment(students, capacity=3):
         chunk = leftover[i:i+C]
         groups.append([sid["studentId"] for sid in chunk])
 
-    room_type = students[0]["roomType"] if students else "3-Sharing"
-    return groups, room_type
+    return groups

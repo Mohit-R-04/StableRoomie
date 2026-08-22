@@ -29,11 +29,7 @@
         <div class="container">
           <div class="header-content">
             <div class="logo-section">
-              <img
-                src="/src/ssn_logo.png"
-                alt="SSN Logo"
-                class="logo"
-              />
+              <img src="/src/ssn_logo.png" alt="SSN Logo" class="logo" />
               <div class="logo-text">
                 <h1>Roommate Harmony</h1>
                 <p>Sri Sivasubramaniya Nadar College of Engineering</p>
@@ -60,39 +56,15 @@
               </div>
               <div class="card-content">
                 <button class="button" onclick="handleLoginWithAccountChooser()">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    preserveAspectRatio="xMidYMid"
-                    viewBox="0 0 256 262"
-                    class="svg"
-                  >
-                    <path
-                      fill="#4285F4"
-                      d="M255.878 133.451c0-10.734-.871-18.567-2.756-26.69H130.55v48.448h71.947c-1.45 12.04-9.283 30.172-26.69 42.356l-.244 1.622 38.755 30.023 2.685.268c24.659-22.774 38.875-56.282 38.875-96.027"
-                      class="blue"
-                    ></path>
-                    <path
-                      fill="#34A853"
-                      d="M130.55 261.1c35.248 0 64.839-11.605 86.453-31.622l-41.196-31.913c-11.024 7.688-25.82 13.055-45.257 13.055-34.523 0-63.824-22.773-74.269-54.25l-1.531.13-40.298 31.187-.527 1.465C35.393 231.798 79.49 261.1 130.55 261.1"
-                      class="green"
-                    ></path>
-                    <path
-                      fill="#FBBC05"
-                      d="M56.281 156.37c-2.756-8.123-4.351-16.827-4.351-25.82 0-8.994 1.595-17.697 4.206-25.82l-.073-1.73L15.26 71.312l-1.335.635C5.077 89.644 0 109.517 0 130.55s5.077 40.905 13.925 58.602l42.356-32.782"
-                      class="yellow"
-                    ></path>
-                    <path
-                      fill="#EB4335"
-                      d="M130.55 50.479c24.514 0 41.05 10.589 50.479 19.438l36.844-35.974C195.245 12.91 165.798 0 130.55 0 79.49 0 35.393 29.301 13.925 71.947l42.211 32.783c10.59-31.477 39.891-54.251 74.414-54.251"
-                      class="red"
-                    ></path>
+                  <svg xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid" viewBox="0 0 256 262" class="svg">
+                    <path fill="#4285F4" d="M255.878 133.451c0-10.734-.871-18.567-2.756-26.69H130.55v48.448h71.947c-1.45 12.04-9.283 30.172-26.69 42.356l-.244 1.622 38.755 30.023 2.685.268c24.659-22.774 38.875-56.282 38.875-96.027" class="blue"></path>
+                    <path fill="#34A853" d="M130.55 261.1c35.248 0 64.839-11.605 86.453-31.622l-41.196-31.913c-11.024 7.688-25.82 13.055-45.257 13.055-34.523 0-63.824-22.773-74.269-54.25l-1.531.13-40.298 31.187-.527 1.465C35.393 231.798 79.49 261.1 130.55 261.1" class="green"></path>
+                    <path fill="#FBBC05" d="M56.281 156.37c-2.756-8.123-4.351-16.827-4.351-25.82 0-8.994 1.595-17.697 4.206-25.82l-.073-1.73L15.26 71.312l-1.335.635C5.077 89.644 0 109.517 0 130.55s5.077 40.905 13.925 58.602l42.356-32.782" class="yellow"></path>
+                    <path fill="#EB4335" d="M130.55 50.479c24.514 0 41.05 10.589 50.479 19.438l36.844-35.974C195.245 12.91 165.798 0 130.55 0 79.49 0 35.393 29.301 13.925 71.947l42.211 32.783c10.59-31.477 39.891-54.251 74.414-54.251" class="red"></path>
                   </svg>
                   <span class="text">Continue with Google</span>
                 </button>
-                <p class="login-note">
-                  Sign in with your Google account to get started
-                </p>
-
+                <p class="login-note">Sign in with your Google account to get started</p>
               </div>
             </div>
           </div>
@@ -101,25 +73,17 @@
             <div class="feature-card glass-card">
               <div class="feature-icon">👥</div>
               <h3>Smart Matching</h3>
-              <p>
-                Advanced algorithm matches you with compatible roommates based
-                on your preferences
-              </p>
+              <p>Advanced algorithm matches you with compatible roommates based on your preferences</p>
             </div>
             <div class="feature-card glass-card">
               <div class="feature-icon">⏰</div>
               <h3>Lifestyle Compatibility</h3>
-              <p>
-                Match based on sleep schedules, study habits, and daily routines
-              </p>
+              <p>Match based on sleep schedules, study habits, and daily routines</p>
             </div>
             <div class="feature-card glass-card">
               <div class="feature-icon">📚</div>
-              <h3>Department Preferences</h3>
-              <p>
-                Find roommates from your department or explore cross-department
-                matches
-              </p>
+              <h3>Room Type Choices</h3>
+              <p>Pick up to three room type preferences — first, second and third choice</p>
             </div>
           </div>
         </div>
@@ -129,7 +93,6 @@
     <!-- Unified Application Container for Logged-In Users -->
     <div id="app-container" class="page">
       <div class="app-layout">
-        <!-- Sidebar overlay for mobile drawer -->
         <div id="sidebar-overlay" class="sidebar-overlay" onclick="toggleMobileSidebar()"></div>
 
         <!-- Sidebar Navigation -->
@@ -142,22 +105,17 @@
                 <span id="user-role-badge" class="role-badge">Student</span>
               </div>
             </div>
-            <!-- Mobile close button -->
             <button class="sidebar-close-btn" onclick="toggleMobileSidebar()">
               <svg viewBox="0 0 24 24" width="24" height="24"><path fill="currentColor" d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
             </button>
           </div>
-          
+
           <nav class="sidebar-nav">
             <!-- Admin Navigation links -->
             <div class="nav-group admin-only" style="display: none;">
               <a href="#" id="link-admin-overview" class="nav-link active" onclick="switchSection('admin-overview', this)">
                 <svg class="nav-svg" viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z"/></svg>
                 Overview
-              </a>
-              <a href="#" id="link-admin-categories" class="nav-link" onclick="switchSection('admin-categories', this)">
-                <svg class="nav-svg" viewBox="0 0 24 24"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
-                Categories
               </a>
               <a href="#" id="link-admin-rooms" class="nav-link" onclick="switchSection('admin-rooms', this)">
                 <svg class="nav-svg" viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
@@ -169,7 +127,7 @@
               </a>
               <a href="#" id="link-admin-allotment" class="nav-link" onclick="switchSection('admin-allotment', this)">
                 <svg class="nav-svg" viewBox="0 0 24 24"><path d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V10h14v10zm0-12H5V6h14v2z"/></svg>
-                Allot Rooms
+                Lock &amp; Allot
               </a>
             </div>
 
@@ -203,34 +161,36 @@
             <span class="mobile-title">StableRoomie</span>
             <div style="width: 24px;"></div>
           </div>
+
           <!-- ADMIN SECTIONS -->
           <!-- 1. Admin Overview -->
           <section id="admin-overview" class="content-section admin-only active" style="display: none;">
             <div class="dashboard-header">
               <h2>Welcome, Admin!</h2>
-              <p>Manage student categories, room types, and room allotments.</p>
+              <p>Manage room types and run the final room allotment.</p>
             </div>
+
             <div class="features-grid" style="margin-top: 24px; display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 24px;">
-              <div class="feature-card glass-card" style="cursor: pointer; margin: 0; max-width: 100%;" onclick="document.getElementById('link-admin-categories').click()">
-                <div class="feature-icon">
-                  <svg class="feature-svg" viewBox="0 0 24 24"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
-                </div>
-                <h3>Manage Categories</h3>
-                <p>Add, remove, or edit student departments and categories.</p>
-              </div>
               <div class="feature-card glass-card" style="cursor: pointer; margin: 0; max-width: 100%;" onclick="document.getElementById('link-admin-rooms').click()">
                 <div class="feature-icon">
                   <svg class="feature-svg" viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
                 </div>
                 <h3>Manage Room Types</h3>
-                <p>Define custom sharing options and capacities.</p>
+                <p>Define sharing types, students per room, and total rooms available.</p>
               </div>
               <div class="feature-card glass-card" style="cursor: pointer; margin: 0; max-width: 100%;" onclick="document.getElementById('link-admin-tracking').click()">
                 <div class="feature-icon">
                   <svg class="feature-svg" viewBox="0 0 24 24"><path d="M19 3h-4.18C14.4 1.84 13.3 1 12 1c-1.3 0-2.4.84-2.82 2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 0c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zm2 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>
                 </div>
                 <h3>Track Preferences</h3>
-                <p>View registered student details and search preference logs.</p>
+                <p>View registered student details, timestamps, and preference logs.</p>
+              </div>
+              <div class="feature-card glass-card" style="cursor: pointer; margin: 0; max-width: 100%;" onclick="document.getElementById('link-admin-allotment').click()">
+                <div class="feature-icon">
+                  <svg class="feature-svg" viewBox="0 0 24 24"><path d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V10h14v10zm0-12H5V6h14v2z"/></svg>
+                </div>
+                <h3>Lock &amp; Allot</h3>
+                <p>Lock all preference changes and allot every student in one stretch.</p>
               </div>
             </div>
 
@@ -267,7 +227,7 @@
                 <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
                   <div>
                     <h3>⚠️ Unallotted Students</h3>
-                    <p>Total students waiting for rooms</p>
+                    <p>Students who fit into no room type</p>
                   </div>
                   <span id="unallotted-students-count" class="badge incomplete" style="font-size: 1.2rem; padding: 6px 12px;">0</span>
                 </div>
@@ -291,81 +251,95 @@
               </div>
             </div>
 
-            <!-- Allotment History Table -->
+            <!-- Rooms Allotted (room type wise) -->
             <div class="dashboard-card glass-card" style="margin-top: 24px; max-width: 100%;">
               <div class="card-header">
-                <h3>📅 Allotment History</h3>
-                <p>Overview of all finalized room allotments</p>
+                <h3>🏠 Rooms Allotted (Room Type wise)</h3>
+                <p>All occupied rooms grouped by room type</p>
               </div>
               <div class="card-content">
-                <div class="table-responsive">
-                  <table class="modern-table">
-                    <thead>
-                      <tr>
-                        <th>Run ID</th>
-                        <th>Date / Time</th>
-                        <th>Category</th>
-                        <th>Room Type</th>
-                        <th>Students Allotted</th>
-                        <th>Action</th>
-                      </tr>
-                    </thead>
-                    <tbody id="allotment-history-list">
-                      <tr>
-                        <td colspan="6" style="text-align: center; color: #64748b;">Loading allotment history...</td>
-                      </tr>
-                    </tbody>
-                  </table>
+                <div id="rooms-allotted-by-type" style="margin-top: 10px;">
+                  <p style="text-align: center; color: #64748b;">Loading...</p>
                 </div>
               </div>
             </div>
           </section>
 
-          <!-- 2. Admin Categories -->
-          <section id="admin-categories" class="content-section admin-only" style="display: none;">
-            <div class="dashboard-card glass-card" style="max-width: 100%;">
-              <div class="card-header">
-                <h3>👥 Manage Categories</h3>
-                <p>Add, remove, or edit student categories</p>
-              </div>
-              <div class="card-content">
-                <div id="category-list" class="category-list"></div>
-                <button class="btn primary" style="margin-top: 15px;" onclick="showAddCategoryModal()">Add Category</button>
-              </div>
-            </div>
-          </section>
-
-          <!-- 3. Admin Rooms -->
+          <!-- 2. Admin Rooms -->
           <section id="admin-rooms" class="content-section admin-only" style="display: none;">
+            <div class="dashboard-header">
+              <h2>🏠 Manage Room Types</h2>
+              <p>Set sharing type, students per room, and the total number of rooms available for each type</p>
+            </div>
+
             <div class="dashboard-card glass-card" style="max-width: 100%;">
-              <div class="card-header">
-                <h3>🏠 Manage Room Types</h3>
-                <p>Add, remove, or edit room types</p>
+              <div class="card-header room-config-header">
+                <div>
+                  <h3>Room Types</h3>
+                  <p id="room-config-status">Loading configuration...</p>
+                </div>
+                <div class="room-config-meta">
+                  <span id="room-total-capacity" class="badge info">Total capacity: —</span>
+                  <span id="room-setup-ready" class="badge complete" style="display: none;">✔ Ready for Lock &amp; Allot</span>
+                </div>
               </div>
+
               <div class="card-content">
-                <div id="room-type-list" class="room-type-list"></div>
-                <form class="add-room-type-form" style="margin-top: 24px; border-top: 1px solid rgba(0,0,0,0.08); padding-top: 20px;" onsubmit="return false;">
-                  <h4>Add New Room Type</h4>
-                  <div class="form-group">
-                    <label for="newRoomType">Hostel / Room Type Name</label>
-                    <input class="js-getHostel form-select" type="text" id="newRoomType" name="roomType" placeholder="e.g., 3-Sharing, 2-Sharing ..." required />
+                <div class="table-responsive">
+                  <table class="modern-table room-types-table">
+                    <thead>
+                      <tr>
+                        <th>Room Type</th>
+                        <th>Students / Room</th>
+                        <th>Total Rooms</th>
+                        <th>Total Capacity</th>
+                        <th>Rooms Used</th>
+                        <th>Status</th>
+                        <th style="text-align: right;">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody id="room-type-list"></tbody>
+                  </table>
+                </div>
+
+                <p id="room-setup-hint" class="login-note" style="margin-top: 14px;">
+                  ⚠️ The warden <strong>must</strong> enter the students-per-room and total rooms for every room type before clicking <strong>Lock and Allot</strong>.
+                </p>
+
+                <div class="add-room-type-panel">
+                  <div class="add-room-type-title">
+                    <h4>＋ Add New Room Type</h4>
+                    <span class="room-type-meta">New types are added with the rooms left empty</span>
                   </div>
-                  <div class="form-group">
-                    <label for="newRoomCapacity">Number of Members for Each Room</label>
-                    <input class="js-getRoomCapacity form-select" type="number" id="newRoomCapacity" name="capacity" placeholder="e.g., 3" value="3" min="1" required />
+                  <div class="form-row">
+                    <div class="form-group">
+                      <label for="newRoomType">Room Type Name</label>
+                      <input class="js-getHostel form-input" type="text" id="newRoomType" name="roomType" placeholder="e.g., 3-Sharing, 2-Sharing ..." required />
+                    </div>
+                    <div class="form-group">
+                      <label for="newRoomCapacity">Students per Room</label>
+                      <input class="js-getRoomCapacity form-input" type="number" id="newRoomCapacity" name="capacity" placeholder="e.g., 3" value="3" min="1" required />
+                    </div>
+                    <div class="form-group">
+                      <label for="newRoomTotalRooms">Total Rooms Available</label>
+                      <input class="js-getRoomTotalRooms form-input" type="number" id="newRoomTotalRooms" name="totalRooms" placeholder="e.g., 20" value="0" min="1" required />
+                    </div>
+                    <div class="form-group room-add-btn-col">
+                      <label>&nbsp;</label>
+                      <button class="btn primary js-add-button">Add Room Type</button>
+                    </div>
                   </div>
-                  <button class="btn primary js-add-button">Add Room Type</button>
-                </form>
+                </div>
               </div>
             </div>
           </section>
 
-          <!-- 4. Admin Tracking -->
+          <!-- 3. Admin Tracking -->
           <section id="admin-tracking" class="content-section admin-only" style="display: none;">
             <div class="dashboard-card glass-card" style="max-width: 100%;">
               <div class="card-header">
                 <h3>📋 Track Student Preferences</h3>
-                <p>List of all students who have registered their hostel preferences</p>
+                <p>All students who have registered their hostel preferences</p>
               </div>
               <div class="card-content">
                 <div class="search-wrapper">
@@ -376,60 +350,64 @@
                     <thead>
                       <tr>
                         <th>Student Name</th>
-                        <th>College</th>
-                        <th>Department & Year</th>
+                        <th>Department &amp; Year</th>
                         <th>Location</th>
+                        <th>Preference Updated</th>
                         <th>Full Details</th>
                         <th>Contact</th>
                       </tr>
                     </thead>
-                    <tbody id="track-students-table-body">
-                      <!-- Populated dynamically via JS -->
-                    </tbody>
+                    <tbody id="track-students-table-body"></tbody>
                   </table>
                 </div>
               </div>
             </div>
           </section>
 
-          <!-- 5. Admin Allotment -->
+          <!-- 4. Admin Lock & Allot -->
           <section id="admin-allotment" class="content-section admin-only" style="display: none;">
+            <!-- Locked status banner -->
+            <div id="allotment-locked-banner" class="locked-banner" style="display: none;">
+              🔒 Preferences are <strong>locked</strong> and the allotment has been finalized.
+            </div>
+
             <div class="dashboard-card glass-card" style="max-width: 100%;">
               <div class="card-header">
-                <h3>📅 Allot Rooms</h3>
-                <p>Allocate rooms to students by category</p>
+                <h3>🔒 Lock &amp; Allot</h3>
+                <p>Locks every student's preference and allots everyone in a single stretch</p>
               </div>
               <div class="card-content">
-                <div class="form-row">
-                  <div class="form-group">
-                    <label for="allot-location">Location</label>
-                    <select id="allot-location" class="form-select js-allot-location">
-                      <option value="">-- Select Location --</option>
-                      <option value="both">Both</option>
-                      <option value="chennai">Chennai</option>
-                      <option value="non-chennai">Non-Chennai</option>
-                    </select>
-                  </div>
-                  <div class="form-group">
-                    <label for="category">Category</label>
-                    <select id="category" class="form-select js-allot-category">
-                      <option value="">-- Select Category --</option>
-                    </select>
-                  </div>
+                <h4 style="margin-bottom: 10px;">Configured Room Types</h4>
+                <div class="table-responsive">
+                  <table class="modern-table">
+                    <thead>
+                      <tr>
+                        <th>Room Type</th>
+                        <th>Students per Room</th>
+                        <th>Total Rooms</th>
+                        <th>Total Capacity</th>
+                      </tr>
+                    </thead>
+                    <tbody id="lock-config-table-body">
+                      <tr><td colspan="4" style="text-align: center; color: #64748b;">Loading...</td></tr>
+                    </tbody>
+                  </table>
                 </div>
-                <div class="form-row">
-                  <div class="form-group">
-                    <label for="allot-room-type">Room Type</label>
-                    <select id="allot-room-type" class="form-select js-allot-room-type">
-                      <option value="">-- Select Room Type --</option>
-                    </select>
-                  </div>
-                  <div class="form-group">
-                    <label for="num-students">Number of Students</label>
-                    <input type="number" id="num-students" class="form-select js-allot-num" value="100" min="1" required />
-                  </div>
+
+                <div class="status-row" style="margin-top: 16px;">
+                  <span>Students who submitted preferences:</span>
+                  <span id="submitted-students-count" class="badge info">0</span>
                 </div>
-                <button class="btn primary large" onclick="allotRooms()">Allot Rooms</button>
+
+                <div style="margin-top: 20px; display: flex; gap: 12px; flex-wrap: wrap;">
+                  <button id="lock-allot-btn" class="btn primary large" onclick="lockAndAllot()">🔒 Lock and Allot</button>
+                  <button id="reset-allotment-btn" class="btn secondary large" style="display: none;" onclick="resetAllotment()">↺ Reset Allotment</button>
+                </div>
+                <p id="lock-allot-hint" class="login-note" style="margin-top: 10px;">
+                  Allotment priority is based on preference <strong>update time</strong> (earliest first). Each student is placed
+                  into their 1st choice room type; if full, 2nd choice, then 3rd. Each room-type list is sorted by department and
+                  grouped with the 2-phase matching algorithm. Students who fit into no list are reported as unallotted.
+                </p>
               </div>
             </div>
 
@@ -438,7 +416,7 @@
               <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
                 <div>
                   <h3>Allotment Results</h3>
-                  <p>Successfully grouped roommates</p>
+                  <p>Rooms allotted room type wise + unallotted students</p>
                 </div>
                 <button class="btn secondary" onclick="downloadPDF()">📄 Download Chart (PDF)</button>
               </div>
@@ -447,7 +425,6 @@
               </div>
             </div>
           </section>
-
 
           <!-- STUDENT SECTIONS -->
           <!-- 1. Student Overview -->
@@ -463,9 +440,13 @@
                   <p>Status of your hostel preference submission</p>
                 </div>
                 <div class="card-content">
-                  <div class="status-row" style="margin-bottom: 20px;">
+                  <div class="status-row" style="margin-bottom: 10px;">
                     <span>Status:</span>
                     <span class="badge incomplete">Incomplete</span>
+                  </div>
+                  <div class="status-row" style="margin-bottom: 20px;">
+                    <span>Last updated:</span>
+                    <span id="profile-updated-time" class="badge outline">-</span>
                   </div>
                   <button class="btn primary js-profile-action-btn" onclick="document.getElementById('link-student-form').click()">Complete Profile</button>
                 </div>
@@ -484,9 +465,7 @@
                   <div id="allotment-details-container" style="display: none; border-top: 1px solid var(--border-color); padding-top: 16px; margin-top: 16px;">
                     <p style="margin-bottom: 8px;"><strong>Room:</strong> <span id="allotted-room-info">-</span></p>
                     <h5 style="margin: 12px 0 8px 0; font-weight: 600;">Roommates:</h5>
-                    <ul id="allotted-roommates-list" style="list-style: none; padding-left: 0;">
-                      <!-- Populated dynamically via JS -->
-                    </ul>
+                    <ul id="allotted-roommates-list" style="list-style: none; padding-left: 0;"></ul>
                   </div>
                 </div>
               </div>
@@ -495,13 +474,16 @@
 
           <!-- 2. Student Preference Form -->
           <section id="student-form" class="content-section student-only" style="display: none;">
+            <div id="preferences-locked-banner" class="locked-banner" style="display: none;">
+              🔒 Your preferences are <strong>locked</strong> because room allotment has already been finalized by the warden.
+            </div>
             <div class="preferences-form glass-card" style="max-width: 100%;">
               <div class="card-header">
                 <h2>Complete Your Profile</h2>
                 <p>Help us find your perfect roommate by filling out these detailed preferences</p>
               </div>
               <div class="card-content">
-                <form class="form">
+                <form class="form" id="student-pref-form">
                   <div class="form-row">
                     <div class="form-group">
                       <label for="student-name">Name *</label>
@@ -516,7 +498,7 @@
                     </div>
                     <div class="form-group">
                       <label for="sleep-time">Sleep Time *</label>
-                      <select id="sleep-time" class="form-select js-sleep" required aria-required="true" >
+                      <select id="sleep-time" class="form-select js-sleep" required aria-required="true">
                         <option value="11:00 PM" selected>11:00 PM</option>
                         <option value="9:00 PM">9:00 PM</option>
                         <option value="10:00 PM">10:00 PM</option>
@@ -527,7 +509,7 @@
                     </div>
                     <div class="form-group">
                       <label for="wake-time">Wake Time *</label>
-                      <select id="wake-time" class="form-select js-wake" required aria-required="true" >
+                      <select id="wake-time" class="form-select js-wake" required aria-required="true">
                         <option value="7:00 AM" selected>7:00 AM</option>
                         <option value="5:00 AM">5:00 AM</option>
                         <option value="6:00 AM">6:00 AM</option>
@@ -538,7 +520,7 @@
                     </div>
                     <div class="form-group">
                       <label for="noise-level">Preferred Noise Level *</label>
-                      <select id="noise-level" class="form-select js-noise" required aria-required="true" >
+                      <select id="noise-level" class="form-select js-noise" required aria-required="true">
                         <option value="low" selected>Low background noise okay</option>
                         <option value="silent">Complete silence needed</option>
                         <option value="moderate">Moderate noise acceptable</option>
@@ -549,11 +531,23 @@
                   <div class="form-row">
                     <div class="form-group">
                       <label for="department">Department *</label>
-                      <select id="department" class="form-select js-department" required aria-required="true" ></select>
+                      <input id="department" type="text" class="form-input js-department" list="department-list" placeholder="e.g., CSE, IT, ECE" required aria-required="true" />
+                      <datalist id="department-list">
+                        <option value="CSE"></option>
+                        <option value="IT"></option>
+                        <option value="ECE"></option>
+                        <option value="EEE"></option>
+                        <option value="MECH"></option>
+                        <option value="CIVIL"></option>
+                        <option value="BME"></option>
+                        <option value="AI&DS"></option>
+                        <option value="CHEM"></option>
+                        <option value="BIO"></option>
+                      </datalist>
                     </div>
                     <div class="form-group">
                       <label for="year">Year of Study *</label>
-                      <select id="year" class="form-select js-year" required aria-required="true" >
+                      <select id="year" class="form-select js-year" required aria-required="true">
                         <option value="2nd" selected>2nd Year</option>
                         <option value="1st">1st Year</option>
                         <option value="3rd">3rd Year</option>
@@ -576,7 +570,7 @@
 
                   <div class="form-group">
                     <label for="study-time">Preferred Study Time *</label>
-                    <select id="study-time" class="form-select js-study" required aria-required="true" >
+                    <select id="study-time" class="form-select js-study" required aria-required="true">
                       <option value="evening" selected>Evening (5 PM - 9 PM)</option>
                       <option value="early-morning">Early Morning (5 AM - 8 AM)</option>
                       <option value="morning">Morning (8 AM - 12 PM)</option>
@@ -586,14 +580,35 @@
                     </select>
                   </div>
 
-                  <div class="form-group">
-                    <label for="room-type">Room Type Preference *</label>
-                    <select id="room-type" class="form-select js-room" required aria-required="true" ></select>
+                  <div class="form-group" style="border-top: 1px solid var(--border-color); padding-top: 18px; margin-top: 4px;">
+                    <h4 style="margin-bottom: 6px;">Room Type Preferences</h4>
+                    <p class="login-note" style="margin-bottom: 12px;">
+                      You will be placed into your <strong>1st choice</strong> if space is available; otherwise 2nd, then 3rd.
+                      At least one preference is required. All three must be different.
+                    </p>
+                  </div>
+                  <div class="form-row">
+                    <div class="form-group">
+                      <label for="room-type-pref1">1st Choice Room Type *</label>
+                      <select id="room-type-pref1" class="form-select js-room-pref1" required aria-required="true"></select>
+                    </div>
+                    <div class="form-group">
+                      <label for="room-type-pref2">2nd Choice Room Type</label>
+                      <select id="room-type-pref2" class="form-select js-room-pref2">
+                        <option value="">-- None --</option>
+                      </select>
+                    </div>
+                    <div class="form-group">
+                      <label for="room-type-pref3">3rd Choice Room Type</label>
+                      <select id="room-type-pref3" class="form-select js-room-pref3">
+                        <option value="">-- None --</option>
+                      </select>
+                    </div>
                   </div>
 
                   <div class="form-group">
                     <label for="address">Home Address *</label>
-                    <textarea id="address" class="form-textarea js-home" placeholder="Enter your home address" rows="3" required aria-required="true" ></textarea>
+                    <textarea id="address" class="form-textarea js-home" placeholder="Enter your home address" rows="3" required aria-required="true"></textarea>
                   </div>
 
                   <div class="form-group">
@@ -603,12 +618,12 @@
 
                   <div class="form-group">
                     <label for="preferred-roommates">Preferred Roommates (Optional)</label>
-                    <textarea id="preferred-roommates" class="form-textarea js-friends" placeholder="Enter names or student IDs of preferred roommates (if any)" rows="2" ></textarea>
+                    <textarea id="preferred-roommates" class="form-textarea js-friends" placeholder="Enter names of preferred roommates (if any)" rows="2"></textarea>
                   </div>
 
                   <div class="form-group">
                     <label for="study-habits">Study Habits *</label>
-                    <select id="study-habits" class="form-select js-studyHabbits" required aria-required="true" >
+                    <select id="study-habits" class="form-select js-studyHabbits" required aria-required="true">
                       <option value="silent" selected>Silent Study</option>
                       <option value="music">Study with Music</option>
                       <option value="group">Group Study</option>
@@ -619,7 +634,7 @@
                   <div class="form-row">
                     <div class="form-group">
                       <label for="cleanliness">Cleanliness Level *</label>
-                      <select id="cleanliness" class="form-select js-clean" required aria-required="true" >
+                      <select id="cleanliness" class="form-select js-clean" required aria-required="true">
                         <option value="moderately-clean" selected>Moderately Clean</option>
                         <option value="very-clean">Very Clean</option>
                         <option value="casual">Casual</option>
@@ -628,7 +643,7 @@
 
                     <div class="form-group">
                       <label for="light-sensitivity">Light Sensitivity *</label>
-                      <select id="light-sensitivity" class="form-select js-light" required aria-required="true" >
+                      <select id="light-sensitivity" class="form-select js-light" required aria-required="true">
                         <option value="no-light">Need complete darkness to sleep</option>
                         <option value="any-light">Can sleep with any light</option>
                       </select>
@@ -636,13 +651,14 @@
 
                     <div class="form-group">
                       <label for="location">Chennai or Non-Chennai *</label>
-                      <select id="location" class="form-select js-location" required aria-required="true" >
+                      <select id="location" class="form-select js-location" required aria-required="true">
                         <option value="chennai" selected>Chennai</option>
                         <option value="non-chennai">Non-Chennai</option>
                       </select>
                     </div>
                   </div>
 
+                  <p id="form-last-updated" class="login-note" style="margin-bottom: 12px;"></p>
                   <button type="submit" class="btn primary large js-submitIt">Save Preferences</button>
                 </form>
               </div>
@@ -657,7 +673,6 @@
         alert('Authentication failed. Please try again.');
       }
     </script>
-    <script>console.log("hello")</script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
     <script src="/scripts/allotment.js"></script>

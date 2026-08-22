@@ -6,6 +6,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 @Entity
+@Table(name = "rooms")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -19,6 +20,8 @@ public class Rooms {
     private String roomType;
     @Column(name = "capacity")
     private Integer capacity;
+    @Column(name = "total_rooms")
+    private Integer totalRooms;
 
     // Explicit getters and setters
     public Long getRoomId() { return roomId; }
@@ -27,4 +30,6 @@ public class Rooms {
     public void setRoomType(String roomType) { this.roomType = roomType; }
     public Integer getCapacity() { return capacity; }
     public void setCapacity(Integer capacity) { this.capacity = capacity; }
+    public Integer getTotalRooms() { return totalRooms; }
+    public void setTotalRooms(Integer totalRooms) { this.totalRooms = totalRooms; }
 }

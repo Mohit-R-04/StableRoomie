@@ -1,6 +1,7 @@
 package in.edu.ssn.hostel.controller;
 
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -12,8 +13,13 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
+import in.edu.ssn.hostel.model.Allotment;
+import in.edu.ssn.hostel.model.Groups;
 import in.edu.ssn.hostel.model.Student;
-import in.edu.ssn.hostel.model.filter;
+import in.edu.ssn.hostel.repo.allotmentRepo;
+import in.edu.ssn.hostel.repo.groupsRepo;
+import in.edu.ssn.hostel.repo.roomRepo;
+import in.edu.ssn.hostel.service.AllotmentService;
 import in.edu.ssn.hostel.service.studentService;
 
 @CrossOrigin
@@ -23,15 +29,28 @@ public class StudentController {
     @Autowired
     studentService students;
 
+    @Autowired
+    private allotmentRepo arepo;
+
+    @Autowired
+    private groupsRepo grepo;
+
+    @Autowired
+    private roomRepo rrepo;
+
+    @Autowired
+    private AllotmentService allotmentService;
+
     @PostMapping("/saveStudents")
     public ResponseEntity<?> addStudent(@RequestBody Student stud, @AuthenticationPrincipal OAuth2User principal) {
-        if (principal != null) {
-            stud.setEmail(principal.getAttribute("email"));
+        if (principal == null) {
+            return ResponseEntity.status(401).build();
         }
-        
-        java.util.Optional<in.edu.ssn.hostel.model.Groups> groupOpt = grepo.findGroupByStudentId(stud.getStudentId());
-        if (groupOpt.isPresent()) {
-            return ResponseEntity.badRequest().body(java.util.Map.of("message", "Your preferences are locked because room allotment has already been finalized."));
+        stud.setEmail(principal.getAttribute("email"));
+
+        if (allotmentService.isLocked() || arepo.existsByStudentId(stud.getStudentId())) {
+            return ResponseEntity.badRequest().body(Map.of(
+                    "message", "Your preferences are locked because room allotment has already been finalized."));
         }
 
         Student savedStudent = students.addStudent(stud);
@@ -51,22 +70,10 @@ public class StudentController {
         return ResponseEntity.ok(stud);
     }
 
-    @PostMapping("/getStudents")
-    public List<Student> getStudents(@RequestBody filter filters) {
-        List<Student> s = students.getStudents(filters);
-        return s != null ? s : new java.util.ArrayList<>();
-    }
-
     @GetMapping("/api/admin/students")
     public List<Student> getAllStudents() {
         return students.getAllStudents();
     }
-
-    @Autowired
-    private in.edu.ssn.hostel.repo.groupsRepo grepo;
-
-    @Autowired
-    private in.edu.ssn.hostel.repo.roomRepo rrepo;
 
     @GetMapping("/api/student/allotment")
     public ResponseEntity<?> getStudentAllotment(@AuthenticationPrincipal OAuth2User principal) {
@@ -76,40 +83,45 @@ public class StudentController {
         String email = principal.getAttribute("email");
         Student stud = students.getStudentByEmail(email);
         if (stud == null) {
-            return ResponseEntity.ok(java.util.Map.of("allotted", false, "message", "Please complete your profile."));
+            return ResponseEntity.ok(Map.of("allotted", false, "message", "Please complete your profile."));
         }
 
-        java.util.Optional<in.edu.ssn.hostel.model.Groups> groupOpt = grepo.findGroupByStudentId(stud.getStudentId());
-        if (groupOpt.isEmpty()) {
-            return ResponseEntity.ok(java.util.Map.of("allotted", false));
+        java.util.Optional<Allotment> allotmentOpt = arepo.findByStudentId(stud.getStudentId());
+        if (allotmentOpt.isEmpty()) {
+            return ResponseEntity.ok(Map.of("allotted", false, "locked", allotmentService.isLocked()));
         }
 
-        in.edu.ssn.hostel.model.Groups group = groupOpt.get();
-        java.util.Map<String, Object> response = new java.util.HashMap<>();
+        Allotment allotment = allotmentOpt.get();
+        Groups group = grepo.findById(allotment.getGroupId()).orElse(null);
+        if (group == null) {
+            return ResponseEntity.ok(Map.of("allotted", false, "locked", allotmentService.isLocked()));
+        }
+
+        Map<String, Object> response = new java.util.HashMap<>();
         response.put("allotted", true);
+        response.put("locked", allotmentService.isLocked());
         response.put("roomId", group.getRoomId());
-        
-        // Fetch room type name
+        response.put("groupId", group.getGroupId());
+
         String roomType = rrepo.findById(group.getRoomId())
                 .map(r -> r.getRoomType())
                 .orElse("Shared Room");
         response.put("roomType", roomType);
 
-        // Fetch roommates details
-        java.util.List<java.util.Map<String, Object>> roommatesList = new java.util.ArrayList<>();
-        Integer[] ids = { group.getStudent1(), group.getStudent2(), group.getStudent3(), group.getStudent4() };
-        for (Integer id : ids) {
-            if (id != null && id != stud.getStudentId()) {
-                students.getStudentById(id).ifPresent(r -> {
-                    java.util.Map<String, Object> rMap = new java.util.HashMap<>();
-                    rMap.put("name", r.getName());
-                    rMap.put("email", r.getEmail());
-                    rMap.put("phone", r.getPhone());
-                    rMap.put("department", r.getDepartment());
-                    rMap.put("year", r.getYear());
-                    roommatesList.add(rMap);
-                });
+        List<Map<String, Object>> roommatesList = new java.util.ArrayList<>();
+        for (Allotment a : arepo.findByGroupId(group.getGroupId())) {
+            if (a.getStudentId() == null || a.getStudentId() == stud.getStudentId()) {
+                continue;
             }
+            students.getStudentById(a.getStudentId()).ifPresent(r -> {
+                Map<String, Object> rMap = new java.util.HashMap<>();
+                rMap.put("name", r.getName());
+                rMap.put("email", r.getEmail());
+                rMap.put("phone", r.getPhone());
+                rMap.put("department", r.getDepartment());
+                rMap.put("year", r.getYear());
+                roommatesList.add(rMap);
+            });
         }
         response.put("roommates", roommatesList);
 
@@ -119,15 +131,18 @@ public class StudentController {
     @GetMapping("/api/admin/allotment-stats")
     public ResponseEntity<?> getAllotmentStats() {
         List<Student> allStudents = students.getAllStudents();
-        List<in.edu.ssn.hostel.model.Groups> allGroups = grepo.findAll();
-        
+
         java.util.Map<Integer, String> studentToRoomMap = new java.util.HashMap<>();
-        for (in.edu.ssn.hostel.model.Groups g : allGroups) {
-            String roomInfo = "Room " + g.getRoomId();
-            if (g.getStudent1() != null) studentToRoomMap.put(g.getStudent1(), roomInfo);
-            if (g.getStudent2() != null) studentToRoomMap.put(g.getStudent2(), roomInfo);
-            if (g.getStudent3() != null) studentToRoomMap.put(g.getStudent3(), roomInfo);
-            if (g.getStudent4() != null) studentToRoomMap.put(g.getStudent4(), roomInfo);
+        for (Allotment a : arepo.findAll()) {
+            if (a.getStudentId() == null) {
+                continue;
+            }
+            grepo.findById(a.getGroupId()).ifPresent(g -> {
+                String roomInfo = rrepo.findById(g.getRoomId())
+                        .map(r -> r.getRoomType() + " (Room #" + g.getGroupId() + ")")
+                        .orElse("Room #" + g.getGroupId());
+                studentToRoomMap.put(a.getStudentId(), roomInfo);
+            });
         }
 
         java.util.List<java.util.Map<String, Object>> allottedList = new java.util.ArrayList<>();

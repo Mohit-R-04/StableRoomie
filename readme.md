@@ -1,10 +1,8 @@
 # StableRoomie
 
-StableRoomie is a web-based hostel roommate recommendation and allotment system. Students authenticate with Google, submit lifestyle and room preferences, and view their final roommates. Administrators manage allotment categories and room types, inspect submissions, run the matching process, review historical runs, and export allotment results.
+StableRoomie is a web-based hostel roommate recommendation and allotment system. Students authenticate with Google, submit lifestyle preferences and up to three room-type preferences, and view their final room and roommates. Administrators (the warden) configure room types with the total number of rooms available, then run a single **Lock & Allot** step that finalizes the allotment for every student and locks all preference changes.
 
-The application uses a Spring Boot web application as its main entry point, a Flask microservice for graph-based roommate matching, and an H2 or PostgreSQL database for persistence.
-
-> **Placement-preparation note:** This document describes the repository as it currently works, including implementation limitations. The matching success path currently contains a known Flask bug documented in [Known Issues and Technical Debt](#known-issues-and-technical-debt).
+The application uses a Spring Boot web application as its main entry point, a Flask microservice for the two-phase graph-based roommate matching, and an H2 or PostgreSQL database for persistence.
 
 ## Table of Contents
 
@@ -13,71 +11,63 @@ The application uses a Spring Boot web application as its main entry point, a Fl
 - [3. Technology Stack](#3-technology-stack)
 - [4. Repository Structure](#4-repository-structure)
 - [5. System Architecture](#5-system-architecture)
-- [6. Spring Boot Architecture](#6-spring-boot-architecture)
-- [7. Complete Application Flow](#7-complete-application-flow)
-- [8. Matching Algorithm](#8-matching-algorithm)
-- [9. Database Design](#9-database-design)
-- [10. API Reference](#10-api-reference)
-- [11. Authentication and Authorization](#11-authentication-and-authorization)
-- [12. Frontend Working](#12-frontend-working)
-- [13. Configuration](#13-configuration)
-- [14. Running Locally](#14-running-locally)
-- [15. Docker Architecture](#15-docker-architecture)
-- [16. Azure Deployment](#16-azure-deployment)
-- [17. Error Handling and Edge Cases](#17-error-handling-and-edge-cases)
-- [18. Testing and Verification](#18-testing-and-verification)
-- [19. Known Issues and Technical Debt](#19-known-issues-and-technical-debt)
-- [20. Placement and Interview Preparation](#20-placement-and-interview-preparation)
-- [21. Improvement Roadmap](#21-improvement-roadmap)
-- [22. Source Map](#22-source-map)
+- [6. Complete Application Flow](#6-complete-application-flow)
+- [7. Allotment Algorithm](#7-allotment-algorithm)
+- [8. Database Design](#8-database-design)
+- [9. API Reference](#9-api-reference)
+- [10. Authentication and Authorization](#10-authentication-and-authorization)
+- [11. Frontend Working](#11-frontend-working)
+- [12. Configuration](#12-configuration)
+- [13. Running Locally](#13-running-locally)
+- [14. Error Handling and Edge Cases](#14-error-handling-and-edge-cases)
+- [15. Known Issues and Technical Debt](#15-known-issues-and-technical-debt)
+- [16. Improvement Roadmap](#16-improvement-roadmap)
+- [17. Source Map](#17-source-map)
 
 ## 1. Problem Statement
 
-Manual hostel-room allocation does not naturally account for lifestyle compatibility. StableRoomie collects preferences such as sleeping time, waking time, cleanliness, study habits, noise tolerance, light sensitivity, location, preferred roommates, and room-sharing type. It then models students as a weighted graph and uses mutual preferences plus Louvain community detection to produce groups.
+Manual hostel-room allocation does not naturally account for lifestyle compatibility. StableRoomie collects preferences such as sleeping time, waking time, cleanliness, study habits, noise tolerance, light sensitivity, location, preferred roommates, and room-sharing type. Students also rank up to three room-type choices. The warden enters the total number of rooms available for every room type and then clicks **Lock and Allot**; the application places every student into their preferred room type (falling back to 2nd/3rd choice as capacity fills) and uses mutual preferences plus Louvain community detection to form roommate groups within each room type.
 
 ### Core goals
 
 1. Authenticate students and administrators using Google OAuth 2.0.
-2. Collect one preference profile per OAuth email.
-3. Filter eligible students by category, location, room type, and requested count.
-4. Exclude students who already appear in a persisted group.
-5. Honor fully mutual roommate choices before algorithmic grouping.
-6. Group remaining students using weighted compatibility edges.
-7. Persist each allotment run and its generated groups.
-8. Let students view their assigned room and roommate contact information.
-9. Let administrators inspect students, statistics, run history, and downloadable results.
+2. Collect one preference profile per OAuth email, including up to three room-type preferences.
+3. Track when each preference profile was created and last updated.
+4. Let the warden configure room types with capacity (students per room) and total room count.
+5. Run the entire allotment in a single "Lock and Allot" stretch that also locks all preference changes.
+6. Prioritize students by their preference update time when filling room types.
+7. Group each room-type list by department and then with the two-phase matching algorithm.
+8. Report students who fit into no room type as unallotted (no allotment entry for them).
+9. Let students view their assigned room and roommate contact information.
+10. Let administrators inspect students, per-room-type allotments, unallotted students, and export a final PDF.
 
 ## 2. Features and Actors
 
 ### Student
 
 - Google sign-in.
-- Preference profile creation and update.
+- Preference profile creation and update (up to three room-type preferences).
 - Profile prefill on later visits.
-- Preference locking after the student appears in a group.
-- Current allotment status.
-- Assigned room type and room identifier.
-- Roommate name, email, phone, department, and year.
+- Created/updated timestamps shown on the dashboard and form.
+- Preference locking after the warden runs Lock & Allot.
+- Current allotment status: room type, room number, roommates.
 
-### Administrator
+### Administrator (warden)
 
 - Separate admin dashboard chosen from a hard-coded email mapping.
-- Overview statistics for allotted and unallotted students.
-- Student preference search and inspection.
-- Category creation, listing, and deletion.
-- Room-type creation, listing, and deletion.
-- Filtered allotment execution.
-- Allotment history and per-run group inspection.
-- Client-side PDF export using jsPDF and AutoTable.
+- Room-type management: name, students per room (`capacity`), total rooms available (`totalRooms`).
+- Overview statistics: allotted and unallotted students.
+- Rooms allotted shown room-type-wise.
+- Student preference search and inspection with created/updated timestamps.
+- **Lock & Allot**: a single action that finalizes allotment for everyone and locks preferences.
+- Reset Allotment: clears groups/allotments and unlocks preferences for a re-run.
+- Client-side PDF export using jsPDF and AutoTable containing: rooms allotted room-type-wise, the flat allotted-students list, and the unallotted students list.
 
 ### Internal Flask service
 
 - Health endpoints.
-- Student retrieval from Spring Boot.
-- Compatibility calculation.
-- Mutual-preference grouping.
-- Louvain community detection.
-- Group persistence callback to Spring Boot.
+- `POST /allot`: runs the two-phase matching (mutual preferences, then Louvain) on one room-type list sent inline by Spring Boot.
+- No callbacks into Java — Spring Boot performs preference grouping and persistence itself.
 
 ## 3. Technology Stack
 
@@ -91,14 +81,12 @@ Manual hostel-room allocation does not naturally account for lifestyle compatibi
 | Frontend | HTML, CSS, vanilla JavaScript | [`index.html`](StableRoomie/src/main/resources/templates/index.html), [`allotment.js`](StableRoomie/src/main/resources/static/scripts/allotment.js) |
 | Matching service | Python 3.10 image, Flask 3.1.1 | [`flask-api/Dockerfile`](flask-api/Dockerfile), [`requirements.txt`](flask-api/requirements.txt) |
 | Graph processing | NetworkX 3.2.1, python-louvain 0.16 | [`allot.py`](flask-api/service/allot.py) |
-| HTTP between services | Spring `RestTemplate`, Python `requests` | Java group controller and Flask app |
+| HTTP between services | Spring `RestTemplate`, Python `requests` | Java `AllotmentService` and Flask app |
 | Development DB | File-backed H2 in PostgreSQL compatibility mode | [`application.properties`](StableRoomie/src/main/resources/application.properties) |
 | Container DB | PostgreSQL 14 Alpine | [`docker-compose.yml`](docker-compose.yml) |
 | Packaging | Maven, JAR, Gunicorn | Java and Flask Dockerfiles |
 | Local reverse proxy | Caddy 2 | [`Caddyfile`](Caddyfile) |
-| Cloud target | Azure Container Apps and Azure Container Registry | [`deploy-azure.sh`](deploy/deploy-azure.sh) |
-
-Although NumPy, SciPy, scikit-learn, Joblib, and Threadpoolctl are listed in `requirements.txt`, the active matching implementation does not import or train a scikit-learn model. It is a deterministic weighted-graph algorithm.
+| Cloud target | Azure Container Apps and Azure Container Registry | [`deploy/deploy-azure.sh`](deploy/deploy-azure.sh) |
 
 ## 4. Repository Structure
 
@@ -124,22 +112,22 @@ StableRoomie/
 │       │   ├── HostelAllotmentApplication.java
 │       │   ├── config/               # Spring Security
 │       │   ├── controller/           # MVC and REST entry points
-│       │   ├── service/              # Business logic
+│       │   ├── service/              # Business logic (incl. AllotmentService)
 │       │   ├── repo/                 # JPA repositories
-│       │   └── model/                # Entities and filter DTO
+│       │   └── model/                # Entities
 │       └── resources/
 │           ├── application.properties
-│           ├── import.sql            # Currently contains no seed statements
+│           ├── import.sql
 │           ├── templates/index.html  # Single-page login/admin/student UI
 │           └── static/               # CSS, JavaScript, image
 └── flask-api/
     ├── app.py                        # Active Flask application
-    ├── app_temp.py                   # Legacy development variant
+    ├── app_temp.py                   # Legacy development variant (unused)
     ├── requirements.txt
     ├── Dockerfile
     ├── Dockerfile.deploy
     ├── model/students.py             # Unused legacy model
-    └── service/allot.py              # Matching algorithm
+    └── service/allot.py              # Two-phase matching algorithm
 ```
 
 Generated directories such as `target/`, Python virtual environments, and runtime logs are not application source.
@@ -157,7 +145,7 @@ flowchart LR
     subgraph JAVA[Spring Boot :8080]
         SEC[Spring Security]
         MVC[Controllers]
-        SVC[Services]
+        SVC[Services - AllotmentService]
         JPA[Spring Data JPA]
         UI[Thymeleaf + Static UI]
     end
@@ -177,213 +165,98 @@ flowchart LR
     MVC --> SVC
     SVC --> JPA
     JPA --> DB
-    MVC -->|POST /allot_roommates| API
-    API -->|POST /getStudents| MVC
-    API --> MATCH
-    API -->|POST /save-groups| MVC
+    SVC -->|POST /allot| API
 ```
 
 ### 5.2 Network and port map
 
 | Component | Local/container port | Responsibility |
-|---|---:|---|
+|---|---|---:|
 | Caddy | 80, 443 | TLS termination and reverse proxy in Docker Compose |
 | Spring Boot | 8080 | UI, OAuth session, REST APIs, persistence orchestration |
-| Flask/Gunicorn | 5000 | Recommendation and grouping engine |
+| Flask/Gunicorn | 5000 | Two-phase matching engine |
 | PostgreSQL | 5432 | Persistent application data in Compose |
 
-The browser communicates only with Spring Boot. The browser does not call Flask directly in the normal application flow.
+The browser communicates only with Spring Boot. Spring Boot calls Flask synchronously during Lock & Allot, one call per non-empty room-type list. Flask never calls back into Java.
 
 ### 5.3 Why two backend services?
 
-Spring Boot owns identity, HTTP sessions, UI delivery, validation/orchestration, and relational persistence. Flask isolates the graph algorithm and Python graph libraries. This is a polyglot microservice-style split, although both services form one application and call one another synchronously.
+Spring Boot owns identity, HTTP sessions, UI delivery, validation/orchestration, and relational persistence. Flask isolates the graph algorithm and Python graph libraries (NetworkX, python-louvain).
 
-### 5.4 Inter-service dependency
+## 6. Complete Application Flow
 
-The services have a circular runtime call chain during allotment:
+### 6.1 Google login and role routing
 
-```text
-Browser -> Spring Boot -> Flask -> Spring Boot -> Flask algorithm
-        -> Spring Boot persistence -> Flask -> Spring Boot -> Browser
-```
+1. The user opens `/` and clicks "Continue with Google".
+2. Spring Security runs the OAuth2 authorization-code flow.
+3. `CustomOAuth2UserService` adds a `role` attribute (`ADMIN` for the two hard-coded admin emails, `STUDENT` otherwise).
+4. `/process` redirects by role to `/admin/dashboard` or `/student/dashboard`.
+5. The frontend calls `/api/user-info` and shows the matching dashboard sections.
 
-This works because `/getStudents` and `/save-groups` are reachable by Flask, but they are currently public rather than protected by service authentication.
+### 6.2 Student preference submission
 
-## 6. Spring Boot Architecture
+1. The student fills the preference form: name, student ID, college, department, year, contact details, lifestyle preferences, location, preferred roommates, and **1st/2nd/3rd room-type preferences**.
+2. `allotment.js` sends `POST /saveStudents` (no client-side timestamp — the server sets `createdAt`/`updatedAt`).
+3. `StudentController` overwrites the email with the authenticated OAuth email.
+4. If the allotment is locked (any group exists) or the student already has an allotment, HTTP 400 is returned with the locked message.
+5. Otherwise the student row is inserted/updated; `updatedAt` is refreshed on every edit, which is exactly what determines allotment priority.
 
-### 6.1 Layered design
+### 6.3 Warden setup
 
-```mermaid
-flowchart TB
-    V[index.html + allotment.js]
-    C[Controllers]
-    S[Services]
-    R[JPA Repositories]
-    E[JPA Entities]
-    D[(Database)]
-    F[Flask Service]
+1. Under **Room Types** the warden adds room types: name (e.g. `3-Sharing`), students per room (`capacity`), and **total rooms available** (`totalRooms`).
+2. The Lock & Allot screen shows a configuration summary (room type, students/room, total rooms, total capacity = `totalRooms × capacity`).
+3. The **Lock and Allot** button stays disabled until every room type has `totalRooms > 0`.
 
-    V --> C
-    C --> S
-    S --> R
-    R --> E
-    E --> D
-    C <--> F
-```
-
-| Layer | Main classes | Responsibility |
-|---|---|---|
-| Application | `HostelAllotmentApplication` | Bootstraps component scanning and Spring Boot |
-| Configuration | `SecurityConfig` | Route protection, OAuth login, logout, `RestTemplate` bean |
-| Controllers | `LoginController`, `DashboardController`, `StudentController`, `roomsController`, `categoryController`, `groupsController` | HTTP request/response handling |
-| Services | `studentService`, `roomService`, `categoryService`, `GroupService`, `CustomOAuth2UserService` | Filtering, persistence workflows, default data, OAuth role attribute |
-| Repositories | `studentRepo`, `roomRepo`, `groupsRepo`, `categoryRepo`, `allotmentRunRepo` | CRUD and custom JPQL queries |
-| Models | `Student`, `Rooms`, `Groups`, `Category`, `AllotmentRun`, `filter` | Database entities and request DTO |
-| View | `index.html`, `styles.css`, `allotment.js` | Single-page dashboard and interactions |
-
-### 6.2 Startup sequence
-
-1. `HostelAllotmentApplication.main()` starts Spring Boot.
-2. `application.properties` resolves database and OAuth environment variables.
-3. Hibernate updates the schema because `spring.jpa.hibernate.ddl-auto=update`.
-4. Spring creates repositories, services, controllers, the security chain, and `RestTemplate`.
-5. `roomService.initDefaultRooms()` inserts `3-Sharing` and `2-Sharing` when the rooms table is empty.
-6. `categoryService.initDefaultCategories()` inserts six SSN department/year categories when the category table is empty.
-7. The embedded server listens on port 8080.
-
-Lazy initialization is enabled, so some bean initialization may be deferred until first use.
-
-## 7. Complete Application Flow
-
-### 7.1 Google login and role routing
+### 6.4 Lock & Allot (the single-stretch allotment)
 
 ```mermaid
-sequenceDiagram
-    actor User
-    participant UI as Browser UI
-    participant Spring as Spring Boot
-    participant Google as Google OAuth
-
-    User->>UI: Open / or /login
-    UI->>Spring: GET /
-    Spring-->>UI: index.html
-    User->>UI: Continue with Google
-    UI->>Spring: GET /oauth2/authorization/google?prompt=select_account
-    Spring->>Google: OAuth authorization request
-    Google-->>Spring: Callback /login/oauth2/code/google
-    Spring->>Spring: CustomOAuth2UserService adds role attribute
-    Spring-->>UI: Redirect /process
-    alt role == ADMIN
-        Spring-->>UI: Redirect /admin/dashboard
-    else role == STUDENT
-        Spring-->>UI: Redirect /student/dashboard
-    end
-    UI->>Spring: GET /api/user-info
-    Spring-->>UI: authenticated, email, name, role
+flowchart TD
+    A[Warden clicks Lock and Allot] --> B{Every room type has totalRooms > 0?}
+    B -->|No| X[Blocked with message]
+    B -->|Yes| C[Students ordered by updatedAt ASC]
+    C --> D[Place each student into 1st choice list]
+    D --> E{1st choice list full?}
+    E -->|Yes| F[Try 2nd choice list]
+    F --> G{2nd choice full?}
+    G -->|Yes| H[Try 3rd choice list]
+    G -->|No| I[Add to 2nd choice list]
+    H --> J{3rd choice full / none?}
+    J -->|Yes| K[Unallotted - no processing]
+    J -->|No| L[Add to 3rd choice list]
+    E -->|No| M[Add to 1st choice list]
+    D --> N[For each room-type list: sort by department]
+    N --> O[Run 2-phase algorithm per list with that type's capacity]
+    O --> P[Each matched group = one room: save room_groups + allotment rows]
+    K --> Q[Results: rooms room-type-wise + unallotted students]
+    P --> Q
+    Q --> R[All preferences locked]
 ```
 
-Role assignment is not database-driven. Two email addresses in `CustomOAuth2UserService` receive `ADMIN`; every other Google user with an email receives `STUDENT`.
+Details:
 
-### 7.2 Student preference submission
+1. **Validation** — `AllotmentService.lockAndAllot()` refuses to run if allotment already exists or if any room type is missing `totalRooms`.
+2. **Preference grouping** — Students are loaded ordered by `updatedAt` ascending (earliest preference fill/update first). Each student is placed into the list of their 1st-choice room type; if that list has reached `totalRooms × capacity` students, the 2nd choice is tried, then the 3rd. A student therefore lands in at most one room-type list.
+3. **Unallotted** — Students who fit into no list are reported as unallotted. No algorithm runs on them and no `allotment` row is created; they only appear in the results/PDF.
+4. **Two-phase matching per list** — Each non-empty room-type list is sorted by department (so same-department students are grouped together) and then sent to Flask (`POST /allot`, capacity = that type's students per room). Flask runs Pass 1 (fully mutual preferred-roommate groups) and Pass 2 (weighted compatibility graph + Louvain community detection, leftovers chunked).
+5. **Persistence** — Each matched group becomes one `room_groups` row (`room_id` = the room type) plus one `allotment` row per member. The number of groups per type never exceeds `totalRooms` because the list size is capped at `totalRooms × capacity`.
+6. **Locking** — Because groups now exist, every future preference edit is rejected; the student UI disables the form with a lock banner.
 
-1. The authenticated student opens `/student/dashboard`.
-2. JavaScript calls `/api/student/profile` and `/api/student/allotment`.
-3. If a profile exists, the form is populated with persisted values.
-4. The student submits name, student ID, college, department, year, contact details, lifestyle preferences, location, preferred roommates, room type, and an ISO timestamp.
-5. JavaScript sends `POST /saveStudents`.
-6. `StudentController` overwrites the request email with the authenticated OAuth email.
-7. The controller checks whether the submitted student ID already appears in any group slot.
-8. If grouped, it returns HTTP 400 and the preferences remain locked.
-9. Otherwise, `studentService` calls `studentRepo.save()`. Because the student ID is the primary key, this inserts a new row or updates the existing row with that ID.
-10. The saved `Student` entity is returned as JSON.
+### 6.5 Student allotment lookup
 
-### 7.3 Student allotment lookup
+1. `GET /api/student/allotment` finds the student by OAuth email.
+2. The `allotment` table gives the student's `groupId`; the `room_groups` row gives the `roomId` (room type).
+3. Sibling allotments with the same `groupId` are resolved to roommate profiles.
+4. The response also carries `locked` so the UI can disable the form even for unallotted students after Lock & Allot.
 
-1. The UI calls `GET /api/student/allotment`.
-2. The backend finds the student by OAuth email.
-3. If no profile exists, it returns `allotted: false` and asks the user to complete the profile.
-4. The groups repository searches all four student columns for the student ID.
-5. If no group exists, it returns `allotted: false`.
-6. If a group exists, the backend loads its room type and each other student record.
-7. It returns room details and selected roommate contact/profile fields.
+## 7. Allotment Algorithm
 
-### 7.4 Administrator setup flow
+### 7.1 Inputs and outputs
 
-1. The admin dashboard loads `/get-category`, `/get-rooms`, `/api/admin/students`, `/api/admin/allotments`, and `/api/admin/allotment-stats` as needed.
-2. A category is sent to `POST /save-category` as a JSON string, not as an object.
-3. A room type is sent to `POST /room-details` as `{ "name": "...", "capacity": number }`.
-4. Delete actions call category or room delete endpoints.
-5. Student rows can be searched and inspected in a modal.
+**Input:** one room-type list of student JSON objects and a room capacity.
 
-### 7.5 End-to-end allotment flow
+**Output:** a list of groups, where each group is a list of student IDs.
 
-```mermaid
-sequenceDiagram
-    actor Admin
-    participant UI as Browser
-    participant Java as Spring Boot
-    participant Flask as Flask API
-    participant Algo as Matching Algorithm
-    participant DB as H2/PostgreSQL
-
-    Admin->>UI: Select location, category, room type, count
-    UI->>Java: POST /allot_roommates
-    Java->>Flask: POST /allot_roommates
-    Flask->>Java: POST /getStudents with same filters
-    Java->>DB: Query eligible ungrouped students
-    DB-->>Java: Students ordered by submitted_time
-    Java-->>Flask: Student JSON array
-    Flask->>Algo: allotment(students, capacity)
-    Algo-->>Flask: Student ID groups + room type
-    Flask->>Java: POST /save-groups
-    Java->>DB: Insert allotment_run
-    loop Every generated group
-        Java->>DB: Insert student_groups row
-    end
-    Java-->>Flask: success
-    Flask-->>Java: Groups for UI
-    Java-->>UI: Proxied Flask response
-    UI-->>Admin: Render table / enable PDF export
-```
-
-### 7.6 Eligibility filtering
-
-`studentService.getStudents()` performs these transformations and filters:
-
-1. Requires category format `college-department-year`.
-2. Maps category prefix `ssn` to `SSN College`; any other prefix maps to `Shiv Nadar University`.
-3. Uppercases the department segment.
-4. Parses `numStudents`; invalid or absent input defaults to 100.
-5. Uses a first-page `PageRequest` with the requested count.
-6. If location is `both`, ignores location; otherwise, matches location case-insensitively.
-7. Matches the normalized category and room type.
-8. Excludes every student ID present in `student_1`, `student_2`, `student_3`, or `student_4` of any group.
-9. Orders eligible students by `submittedTime` ascending.
-
-### 7.7 Group persistence
-
-`GroupService.saveGroups()`:
-
-1. Reads generated groups and the room type from the Flask payload.
-2. Finds a room ID for the room type or creates a room record if none exists.
-3. Counts every populated student slot.
-4. Creates an `allotment_runs` row containing category, location, room type, count, and current timestamp.
-5. Creates one `student_groups` row per generated group with up to four student IDs.
-6. Assigns the same selected room ID and new run ID to every group in that run.
-
-The same room ID assignment is a current modeling limitation; see [Known Issues and Technical Debt](#19-known-issues-and-technical-debt).
-
-## 8. Matching Algorithm
-
-The algorithm is implemented in [`flask-api/service/allot.py`](flask-api/service/allot.py).
-
-### 8.1 Inputs and outputs
-
-**Input:** a filtered array of student JSON objects and a room capacity.
-
-**Output:** a list of groups, where each group is a list of student IDs, plus the room type read from the first student.
-
-### 8.2 Compatibility score
+### 7.2 Compatibility score
 
 For every pair of unassigned students, the algorithm adds these contributions:
 
@@ -398,69 +271,27 @@ For every pair of unassigned students, the algorithm adds these contributions:
 | Preferred roommate | Mutual: 1.0; one-way: 0.5 | 1.0 |
 | **Maximum implemented pair score** | All maximum rules satisfied | **3.0** |
 
-Sleep times after midnight are linearized so that `12:00 AM` becomes 24, `1:00 AM` becomes 25, and so on. Invalid sleep time defaults to 10 PM; invalid wake time defaults to 7 AM.
+Sleep times after midnight are linearized (`12:00 AM` → 24, `1:00 AM` → 25, ...). Invalid sleep/wake values default to 10 PM / 7 AM. Preferred roommates are stored as comma-separated names and resolved to student IDs; duplicate names make resolution ambiguous.
 
-Preferred roommates are stored as comma-separated names. The code resolves those names to student IDs; duplicate names can therefore make preference resolution ambiguous.
+### 7.3 Two-phase grouping
 
-### 8.3 Two-pass grouping
+**Pass 1 — fully mutual requested groups:** for each unassigned student, combinations of `C - 1` preferred roommates are checked; the first combination where every member lists every other member is accepted as a group of size `C`.
 
-#### Pass 1: fully mutual requested groups
+**Pass 2 — Louvain communities:** all remaining students become nodes of a weighted graph (edges only when compatibility > 0); `community_louvain.best_partition()` finds communities; each community is chunked into groups of `C`; any leftover students are chunked into a final (possibly partial) group.
 
-For room capacity `C`:
+Because Spring Boot sorts each list by department before calling Flask, same-department students are adjacent and therefore tend to land in the same chunks/rooms, satisfying "same department students will get allotted together".
 
-1. Visit each unassigned student.
-2. Resolve the student's preferred-roommate names to IDs.
-3. Generate combinations of `C - 1` preferred students.
-4. For each candidate group of size `C`, verify that every member lists every other member.
-5. Immediately accept the first fully mutual group and mark its members assigned.
+## 8. Database Design
 
-This gives explicit, reciprocal choices priority over calculated compatibility.
-
-#### Pass 2: Louvain communities
-
-1. Add every remaining student as a graph node.
-2. Calculate compatibility for every remaining pair.
-3. Add a weighted edge only when the score is greater than zero.
-4. Run `community_louvain.best_partition()` using edge weight.
-5. Split each discovered community into chunks of room capacity.
-6. Collect all still-unassigned students and chunk them sequentially, allowing the final group to be smaller than capacity.
-
-### 8.4 Algorithm flow
-
-```mermaid
-flowchart TD
-    A[Filtered students] --> B{Capacity equals 1?}
-    B -->|Yes| C[Create one-student groups]
-    B -->|No| D[Resolve preferred names]
-    D --> E[Create fully mutual groups of size C]
-    E --> F[Collect unassigned students]
-    F --> G[Build weighted compatibility graph]
-    G --> H[Run Louvain best_partition]
-    H --> I[Chunk each community by capacity]
-    I --> J[Chunk remaining leftovers]
-    C --> K[Return groups and room type]
-    J --> K
-```
-
-### 8.5 Complexity discussion
-
-- Compatibility graph construction compares every remaining pair, so it is quadratic in the number of unassigned students: `O(n^2)` pair calculations.
-- Mutual-preference grouping can generate combinations of preferred students, so its cost grows with preference-list size and room capacity.
-- Memory is up to `O(n^2)` for a dense compatibility graph.
-- Louvain is used because it groups strongly connected students according to total edge weight, but final fixed-size room chunks are taken from community member order rather than optimized again within each community.
-
-## 9. Database Design
-
-### 9.1 Persistence behavior
+### 8.1 Persistence behavior
 
 - Hibernate manages schema creation/update with `ddl-auto=update`.
 - There is no Flyway or Liquibase migration history.
-- Development defaults to a file-backed H2 database.
-- Docker Compose uses PostgreSQL 14.
-- `students_seed.sql` is optional manual seed data and is not mounted or automatically executed by Compose.
-- `import.sql` currently contains no executable seed data.
+- Development defaults to a file-backed H2 database; Docker Compose uses PostgreSQL 14.
+- `students_seed.sql` is optional manual seed data (500 rows) and is not auto-executed.
+- `import.sql` contains no executable seed data.
 
-### 9.2 Entity relationship diagram
+### 8.2 Entity relationship diagram
 
 The arrows below represent logical ID references in application code. The entities do **not** declare JPA relationships or database foreign-key annotations.
 
@@ -474,7 +305,9 @@ erDiagram
         string student_year
         string department
         string phone
-        string room_type
+        string room_type_pref_1
+        string room_type_pref_2
+        string room_type_pref_3
         string sleep_time
         string wake_time
         string study_time
@@ -486,45 +319,34 @@ erDiagram
         string location
         string address
         string emergency_contact
-        datetime submitted_time
+        datetime created_at
+        datetime updated_at
     }
 
     ROOMS {
         bigint room_id PK
         string room_type
         int capacity
+        int total_rooms
     }
 
-    ALLOTMENT_RUNS {
-        bigint id PK
-        string category
-        string location
-        string room_type
-        int student_count
-        datetime timestamp
-    }
-
-    STUDENT_GROUPS {
-        bigint id PK
-        int student_1
-        int student_2
-        int student_3
-        int student_4
+    ROOM_GROUPS {
+        bigint group_id PK
         bigint room_id
-        bigint run_id
     }
 
-    CATEGORY {
-        bigint id PK
-        string category
+    ALLOTMENT {
+        bigint allotment_id PK
+        bigint group_id
+        int student_id UK
     }
 
-    ROOMS ||--o{ STUDENT_GROUPS : "logical room_id"
-    ALLOTMENT_RUNS ||--o{ STUDENT_GROUPS : "logical run_id"
-    STUDENT ||--o{ STUDENT_GROUPS : "logical student_1..4"
+    ROOMS ||--o{ ROOM_GROUPS : "logical room_id (room type)"
+    ROOM_GROUPS ||--o{ ALLOTMENT : "logical group_id"
+    STUDENT ||--o| ALLOTMENT : "logical student_id"
 ```
 
-### 9.3 Table definitions
+### 8.3 Table definitions
 
 #### `student`
 
@@ -537,19 +359,22 @@ erDiagram
 | `student_year` | `String` | Academic year |
 | `department` | `String` | Department code |
 | `phone` | `String` | Contact number |
-| `room_type` | `String` | Preferred sharing type |
+| `room_type_pref_1` | `String` | First-choice room type (required for priority grouping) |
+| `room_type_pref_2` | `String` | Second-choice room type (optional) |
+| `room_type_pref_3` | `String` | Third-choice room type (optional) |
 | `sleep_time` | `String` | Lifestyle input used by matcher |
 | `wake_time` | `String` | Lifestyle input used by matcher |
-| `study_time` | `String` | Stored preference; not used in current compatibility score |
+| `study_time` | `String` | Stored preference; not used in the compatibility score |
 | `study_habits` | `String` | Used by matcher |
 | `cleanliness` | `String` | Used by matcher |
 | `light_sensitivity` | `String` | Used by matcher |
 | `noise_level` | `String` | Used by matcher |
 | `preferred_roommates` | `String` | Comma-separated names |
-| `location` | `String` | Chennai/non-Chennai filtering value |
+| `location` | `String` | Chennai/non-Chennai value |
 | `address` | `String` | Student address |
 | `emergency_contact` | `String` | Emergency phone/contact |
-| `submitted_time` | `LocalDateTime` | Used for first-submitted-first-selected ordering |
+| `created_at` | `LocalDateTime` | Set by Hibernate on insert |
+| `updated_at` | `LocalDateTime` | Set by Hibernate on every update; drives allotment priority |
 
 #### `rooms`
 
@@ -557,113 +382,87 @@ erDiagram
 |---|---|---|
 | `room_id` | `Long` | Identity primary key |
 | `room_type` | `String` | Display name such as `3-Sharing` |
-| `capacity` | `Integer` | Group size requested by UI; not enforced during persistence |
+| `capacity` | `Integer` | Students per room for this type |
+| `total_rooms` | `Integer` | Total number of rooms available of this type; required before Lock & Allot |
 
-#### `student_groups`
-
-| Column | Java type | Constraint/meaning |
-|---|---|---|
-| `id` | `Long` | Sequence-generated primary key using `student_sequence` |
-| `student_1` | `Integer` | Nullable logical student reference |
-| `student_2` | `Integer` | Nullable logical student reference |
-| `student_3` | `Integer` | Nullable logical student reference |
-| `student_4` | `Integer` | Nullable logical student reference |
-| `room_id` | `Long` | Logical room reference; no JPA relationship |
-| `run_id` | `Long` | Nullable logical allotment-run reference |
-
-#### `allotment_runs`
+#### `room_groups`
 
 | Column | Java type | Constraint/meaning |
 |---|---|---|
-| `id` | `Long` | Identity primary key |
-| `category` | `String` | Filter category used for the run |
-| `location` | `String` | Filter location used for the run |
-| `room_type` | `String` | Room type returned by matcher |
-| `student_count` | `Integer` | Total populated student slots |
-| `timestamp` | `LocalDateTime` | Persistence time of the run |
+| `group_id` | `Long` | Identity primary key; one row per occupied room |
+| `room_id` | `Long` | Logical reference to the rooms row = the room **type** |
 
-#### `category`
+The physical table is named `room_groups` because `groups` is a reserved SQL keyword in PostgreSQL/H2.
+
+#### `allotment`
 
 | Column | Java type | Constraint/meaning |
 |---|---|---|
-| `id` | `Long` | Sequence-generated primary key using `category_seq` |
-| `category` | `String` | Value expected in `college-department-year` form |
+| `allotment_id` | `Long` | Identity primary key |
+| `group_id` | `Long` | Logical reference to a room_groups row (room) |
+| `student_id` | `Integer` | Logical reference to a student; UNIQUE across the table (one active allotment per student) |
 
-### 9.4 Default data
+### 8.4 Default data
 
-On an empty database, application services attempt to create:
+On an empty database, `roomService.initDefaultRooms()` creates:
 
 ```text
-Rooms:      3-Sharing (capacity 3), 2-Sharing (capacity 2)
-Categories: ssn-CSE-1st, ssn-CSE-2nd, ssn-ECE-1st,
-            ssn-ECE-2nd, ssn-IT-1st, ssn-IT-2nd
+Rooms: 3-Sharing (capacity 3, totalRooms 20), 2-Sharing (capacity 2, totalRooms 10),
+       4-Sharing (capacity 4, totalRooms 5)
 ```
 
-### 9.5 Data-integrity implications
+On an empty student table, `TestDataSeeder` inserts 200 test students
+(IDs 1001-1200, emails `test1001@ssn.edu.in` … `test1200@ssn.edu.in`) with
+varied departments, lifestyle profiles, up to three room-type preferences,
+reciprocal roommate-preference pairs, and staggered `created_at`/`updated_at`
+timestamps so the preference-time prioritization is observable. Set
+`SEED_TEST_STUDENTS=false` (or `app.seed-test-students=false`) to disable;
+existing data is never touched.
 
-Because group references are plain numeric columns:
+There is no default category table anymore — department is a free-text field on the student form.
 
-- The database does not prevent a nonexistent student, room, or run ID.
-- A student can technically appear in multiple groups.
-- Deleting a room can leave group rows referring to the removed room.
-- Four student columns impose a hard maximum of four persisted members per group.
-- Repository methods returning one `Optional` can fail if several rows match.
+### 8.5 Removed tables
 
-A normalized design would introduce a `group_members` join table with foreign keys and a unique constraint on active student allotment.
+- `category` (and its controller/service/repo) — removed; departments come from student profiles.
+- `allotment_runs` — removed; the allotment is finalized in one stretch, so per-run history is unnecessary.
+- `student_groups` (student_1..4 columns) — replaced by `room_groups` + `allotment`.
 
-## 10. API Reference
+### 8.6 Data-integrity implications
 
-### 10.1 Authentication legend
+Because group references are plain numeric columns with no JPA foreign keys:
+
+- The database does not prevent a nonexistent student/room reference.
+- Deleting a room can leave group rows referring to the removed room (room mutations are blocked while the allotment is locked).
+- The UNIQUE constraint on `allotment.student_id` does guarantee one active allotment per student.
+
+## 9. API Reference
+
+### 9.1 Authentication legend
 
 - **Public:** permitted by the current Spring Security configuration.
-- **Authenticated:** any logged-in Google user; current API security does not enforce admin role.
+- **Authenticated:** any logged-in Google user; current API security does not enforce the admin role.
 - **Manual role check:** controller checks the OAuth `role` attribute.
-- **Flask:** no authentication in the Flask service itself.
 
-### 10.2 Page, session, and identity endpoints
-
-| Method | Path | Access | Input | Success result |
-|---|---|---|---|---|
-| `GET` | `/` | Public | None | Renders `index.html` |
-| `GET` | `/login` | Public | Optional query error | Renders `index.html` |
-| `GET` | `/error` | Public | None | Redirects to `/login?error=oauth` |
-| Any | `/process` | Authenticated | OAuth principal | Redirects by role |
-| `GET` | `/api/user-info` | Public | Current session if present | Authentication state and user attributes |
-| `GET` | `/logout` | Authenticated in normal use | Session/cookies | Invalidates session, clears cookies, redirects `/` |
-| `GET` | `/admin/dashboard` | Manual ADMIN check | OAuth principal | Renders `index.html` or redirects to login |
-| `GET` | `/student/dashboard` | Manual STUDENT check | OAuth principal | Renders `index.html` or redirects to login |
-
-Spring Security also provides `/oauth2/authorization/google` and handles `/login/oauth2/code/google`.
-
-#### `GET /api/user-info`
-
-Unauthenticated response:
-
-```json
-{
-  "authenticated": false
-}
-```
-
-Authenticated response shape:
-
-```json
-{
-  "authenticated": true,
-  "email": "student@ssn.edu.in",
-  "name": "Student Name",
-  "role": "STUDENT"
-}
-```
-
-### 10.3 Student endpoints
+### 9.2 Page, session, and identity endpoints
 
 | Method | Path | Access | Purpose |
 |---|---|---|---|
-| `POST` | `/saveStudents` | Authenticated | Insert/update preference profile |
+| `GET` | `/` | Public | Renders `index.html` |
+| `GET` | `/login` | Public | Renders `index.html` |
+| `GET` | `/error` | Public | Redirects to `/login?error=oauth` |
+| Any | `/process` | Authenticated | Redirects by role |
+| `GET` | `/api/user-info` | Public | Authentication state and user attributes |
+| `GET` | `/logout` | Authenticated | Invalidates session and redirects `/` |
+| `GET` | `/admin/dashboard` | Manual ADMIN check | Renders `index.html` |
+| `GET` | `/student/dashboard` | Manual STUDENT check | Renders `index.html` |
+
+### 9.3 Student endpoints
+
+| Method | Path | Access | Purpose |
+|---|---|---|---|
+| `POST` | `/saveStudents` | Authenticated | Insert/update preference profile (rejected when locked) |
 | `GET` | `/api/student/profile` | Authenticated | Find profile by OAuth email |
-| `POST` | `/getStudents` | Public | Internal filtered student lookup used by Flask |
-| `GET` | `/api/student/allotment` | Authenticated | Current student's room and roommates |
+| `GET` | `/api/student/allotment` | Authenticated | Current student's room, roommates, and lock state |
 | `GET` | `/api/admin/students` | Authenticated | Return all student entities |
 | `GET` | `/api/admin/allotment-stats` | Authenticated | Allotted/unallotted counts and lists |
 
@@ -679,23 +478,24 @@ Request shape:
   "year": "2nd",
   "department": "IT",
   "phone": "9000000000",
-  "roomType": "3-Sharing",
+  "roomTypePref1": "3-Sharing",
+  "roomTypePref2": "2-Sharing",
+  "roomTypePref3": "4-Sharing",
   "sleepTime": "11:00 PM",
   "wakeTime": "7:00 AM",
   "studyTime": "Evening",
   "studyHabits": "silent",
   "cleanliness": "moderately-clean",
-  "lightSensitivity": "Low",
+  "lightSensitivity": "No",
   "noiseLevel": "Low",
   "preferredRoommates": "Student Two, Student Three",
   "location": "chennai",
   "address": "Address",
-  "emergencyContact": "9000000001",
-  "submittedTime": "2026-08-18T12:30:00.000Z"
+  "emergencyContact": "9000000001"
 }
 ```
 
-The server ignores any request `email` value and uses the OAuth principal email. Success returns the saved entity. If the student ID is already grouped, HTTP 400 returns:
+The server ignores any request email and uses the OAuth principal email. `createdAt`/`updatedAt` are set server-side. If the allotment is locked or the student is already allotted, HTTP 400 returns:
 
 ```json
 {
@@ -703,28 +503,14 @@ The server ignores any request `email` value and uses the OAuth principal email.
 }
 ```
 
-#### `POST /getStudents`
-
-Request:
-
-```json
-{
-  "location": "both",
-  "category": "ssn-IT-2nd",
-  "roomType": "3-Sharing",
-  "numStudents": "60"
-}
-```
-
-Success returns a JSON array of full `Student` entities. Invalid category form raises a server-side `IllegalArgumentException`; no controller exception mapper currently converts it to a structured client error.
-
 #### `GET /api/student/allotment`
 
 Not yet grouped:
 
 ```json
 {
-  "allotted": false
+  "allotted": false,
+  "locked": false
 }
 ```
 
@@ -733,7 +519,9 @@ Grouped response shape:
 ```json
 {
   "allotted": true,
+  "locked": true,
   "roomId": 1,
+  "groupId": 7,
   "roomType": "3-Sharing",
   "roommates": [
     {
@@ -747,262 +535,131 @@ Grouped response shape:
 }
 ```
 
-#### `GET /api/admin/allotment-stats`
-
-Response shape:
-
-```json
-{
-  "allottedCount": 30,
-  "unallottedCount": 10,
-  "allottedStudents": [
-    {
-      "studentId": 1234,
-      "name": "Student Name",
-      "email": "student@ssn.edu.in",
-      "phone": "9000000000",
-      "category": "SSN College-IT-2nd",
-      "location": "chennai",
-      "roomDetails": "Room 1"
-    }
-  ],
-  "unallottedStudents": []
-}
-```
-
-### 10.4 Category endpoints
-
-| Method | Path | Access | Input/result |
-|---|---|---|---|
-| `POST` | `/save-category` | Authenticated | Raw JSON string; returns saved category |
-| `GET` | `/get-category` | Authenticated | Returns all category entities |
-| `DELETE` | `/delete-category/{id}` | Authenticated | Deletes by ID; returns 200 with empty body |
-
-The frontend sends the category as a JSON string:
-
-```json
-"ssn-IT-3rd"
-```
-
-Depending on message conversion, the persisted value may include quote characters because the controller accepts `String` directly rather than `{ "category": "..." }`.
-
-### 10.5 Room endpoints
-
-| Method | Path | Access | Input/result |
-|---|---|---|---|
-| `POST` | `/room-details` | Authenticated | `{ "name": "4-Sharing", "capacity": 4 }`; returns room |
-| `GET` | `/get-rooms` | Authenticated | Returns all rooms |
-| `DELETE` | `/remove-room/{id}` | Authenticated | Deletes one room by primary key |
-| `DELETE` | `/remove-room-type/{roomType}` | Authenticated | Deletes every room with exact type |
-| `POST` | `/remove-room-type` | Authenticated | Legacy form parameter; deletes and redirects |
-| `POST` | `/edit-room-type` | Authenticated | Legacy no-op; redirects to admin dashboard |
-
-### 10.6 Allotment and group endpoints
+### 9.4 Admin allotment endpoints
 
 | Method | Path | Access | Purpose |
 |---|---|---|---|
-| `POST` | `/allot_roommates` | Authenticated | Proxy an allotment request to Flask |
-| `POST` | `/save-groups` | Public | Internal Flask callback that persists a run/groups |
-| `GET` | `/api/admin/allotments` | Authenticated | Return run history; may migrate legacy groups |
-| `GET` | `/api/admin/allotment-run/{runId}/groups` | Authenticated | Return display-ready groups for one run |
+| `POST` | `/api/admin/lock-and-allot` | Authenticated | Run the full single-stretch allotment; returns results |
+| `GET` | `/api/admin/allotment-results` | Authenticated | Rooms allotted room-type-wise + unallotted students |
+| `POST` | `/api/admin/reset-allotment` | Authenticated | Delete all groups/allotments and unlock preferences |
 
-#### `POST /allot_roommates` on Spring Boot
+#### `POST /api/admin/lock-and-allot`
 
-Request:
+Validation failures return HTTP 400, for example:
 
 ```json
 {
-  "location": "chennai",
-  "category": "ssn-IT-2nd",
-  "roomType": "3-Sharing",
-  "numStudents": "30",
-  "capacity": 3
+  "message": "Warden must enter the total number of rooms available for room type: 3-Sharing"
 }
 ```
 
-Spring Boot forwards the body to Flask and passes the Flask status/body back to the browser.
+Success returns the same shape as `GET /api/admin/allotment-results`.
 
-Intended success response:
+#### `GET /api/admin/allotment-results`
 
 ```json
 {
-  "message": "Allotment Successful",
-  "roomType": "3-Sharing",
-  "groups": [
+  "locked": true,
+  "allottedCount": 116,
+  "unallottedCount": 4,
+  "roomTypes": [
     {
-      "student_1": "Student One (1001)",
-      "student_2": "Student Two (1002)",
-      "student_3": "Student Three (1003)"
+      "roomType": "3-Sharing",
+      "capacity": 3,
+      "totalRooms": 20,
+      "usedRooms": 18,
+      "rooms": [
+        {
+          "groupId": 7,
+          "students": [
+            { "studentId": 1000, "name": "Pooja Das", "department": "IT", "year": "2nd", "email": "...", "phone": "..." }
+          ]
+        }
+      ]
+    }
+  ],
+  "unallotted": [
+    {
+      "studentId": 1400,
+      "name": "Some Student",
+      "department": "CSE",
+      "year": "2nd",
+      "email": "...",
+      "phone": "...",
+      "preferences": ["3-Sharing", "2-Sharing", "4-Sharing"]
     }
   ]
 }
 ```
 
-#### `POST /save-groups`
+### 9.5 Room endpoints
 
-Internal request shape:
-
-```json
-{
-  "roomType": "3-Sharing",
-  "category": "ssn-IT-2nd",
-  "location": "chennai",
-  "groups": [
-    {
-      "student_1": 1001,
-      "student_2": 1002,
-      "student_3": 1003
-    }
-  ]
-}
-```
-
-Success body is plain text:
-
-```text
-success
-```
-
-#### `GET /api/admin/allotments`
-
-Response shape:
-
-```json
-[
-  {
-    "id": 1,
-    "category": "ssn-IT-2nd",
-    "location": "chennai",
-    "roomType": "3-Sharing",
-    "studentCount": 30,
-    "date": "2026-08-18 12:30:00"
-  }
-]
-```
-
-This GET has a side effect: groups with `run_id = null` are attached to a newly created `Legacy Category` run before history is returned.
-
-### 10.7 Flask endpoints
-
-| Method | Path | Access | Purpose/result |
+| Method | Path | Access | Purpose |
 |---|---|---|---|
-| `GET` | `/` | Flask public | `{ "status": "ok" }` |
-| `GET` | `/health` | Flask public | `{ "status": "ok" }` |
-| `POST` | `/allot_roommates` | Flask public | Fetch, match, persist, and return groups |
+| `POST` | `/room-details` | Authenticated | `{ "name": "4-Sharing", "capacity": 4, "totalRooms": 10 }` |
+| `POST` | `/update-room/{id}` | Authenticated | `{ "capacity": 4, "totalRooms": 15 }` (partial updates allowed) |
+| `GET` | `/get-rooms` | Authenticated | Returns all rooms ordered by `roomId` |
+| `DELETE` | `/remove-room/{id}` | Authenticated | Deletes one room type row |
+| `DELETE` | `/remove-room-type/{roomType}` | Authenticated | Deletes every row of that type |
 
-Flask returns HTTP 400 for missing/empty student results, HTTP 500 when Java fetch/save fails or an algorithm exception occurs, and HTTP 200 on the intended success path.
+All room mutations return HTTP 400 while the allotment is locked.
 
-## 11. Authentication and Authorization
+### 9.6 Flask endpoints
 
-### 11.1 Authentication mechanism
+| Method | Path | Purpose |
+|---|---|---|
+| `GET` | `/` | `{ "status": "ok" }` |
+| `GET` | `/health` | `{ "status": "ok" }` |
+| `POST` | `/allot` | Two-phase matching for one room-type list: body `{ "students": [...], "capacity": 3 }` → `{ "groups": [[1001,1002,1003], ...] }` |
+
+Flask no longer calls Java (`/getStudents` and `/save-groups` were removed), which also eliminated the previous `student_map` crash bug in the success path.
+
+## 10. Authentication and Authorization
 
 - Google OAuth 2.0 supplies email and profile attributes.
-- Spring Security creates a server-side authenticated session using `JSESSIONID`.
-- `CustomOAuth2UserService` wraps Google attributes and adds a custom `role` field.
-- The granted Spring authority is always `ROLE_USER`; `ADMIN` and `STUDENT` exist only as an OAuth attribute.
-- Dashboard controllers inspect that attribute manually.
+- `CustomOAuth2UserService` adds a `role` attribute (`ADMIN` for the hard-coded admin emails, `STUDENT` otherwise); the granted Spring authority is always `ROLE_USER`.
+- Explicitly public Spring paths: `/`, `/login`, `/api/user-info`, `/error`, `/favicon.ico`, `/styles.css`, `/scripts/**`, `/src/**`.
+- Every other Spring path requires authentication, but admin APIs do not enforce an admin authority.
+- CSRF is disabled globally; controller `@CrossOrigin` has no origin restriction; Flask enables unrestricted CORS.
 
-### 11.2 Current route policy
+For production, use role authorities, route authorization, CSRF protection, restricted CORS, service authentication, DTOs that omit private fields, and an enforced organization-domain policy.
 
-Explicitly public Spring paths include:
+## 11. Frontend Working
 
-```text
-/
-/login
-/api/user-info
-/error
-/favicon.ico
-/styles.css
-/scripts/**
-/src/**
-/getStudents
-/save-groups
-```
+- One Thymeleaf template (`index.html`) serves login and both dashboards; JavaScript switches sections based on `/api/user-info`.
+- Permanent **velvet dark theme**: a deep plum-navy palette with an indigo-violet accent (`color-scheme: dark`), so the whole app — including native select dropdowns and scrollbars — renders consistently dark.
+- Student form: three room-type preference selects (1st required, 2nd/3rd optional, must differ), free-text department with a datalist, and a lock banner that disables the whole form once allotment is finalized.
+- Admin screens: **Room Types** (add, and edit students-per-room + total rooms inline), **Track Preferences** (search + created/updated columns), **Lock & Allot** (configuration summary, disabled-until-configured button, results, reset), **Overview** (stats + rooms allotted room-type-wise + unallotted).
+- Destructive or final actions (Lock & Allot, Reset Allotment, remove room type) use an in-app confirmation dialog (with a live summary for Lock & Allot); all feedback uses toast notifications instead of native `alert`/`confirm`.
+- PDF export (`downloadPDF`) renders every room-type results block plus the flat allotted-students table and the unallotted students table via jsPDF/AutoTable.
 
-Every other Spring path requires authentication, but admin APIs do not require an admin authority. Therefore, an authenticated student can call admin APIs directly even if the UI hides them.
+## 12. Configuration
 
-### 11.3 Security observations
-
-- CSRF is disabled globally despite cookie-based session authentication.
-- Controller-level `@CrossOrigin` has no origin restriction.
-- Flask enables unrestricted CORS and has no authentication.
-- The declared `@ssn.edu.in` allowed-domain constant is not enforced.
-- Full student entities, including personal contact data, can be returned by the public `/getStudents` endpoint.
-- Admin identification is hard-coded rather than stored as a role/permission model.
-- Secrets must remain environment variables and must never be committed.
-
-For production, use role authorities, method/route authorization, CSRF protection, restricted CORS, service-to-service authentication, DTOs that omit private fields, and an enforced organization-domain policy.
-
-## 12. Frontend Working
-
-### 12.1 Rendering model
-
-The application uses one Thymeleaf template, `index.html`, for login and both dashboards. JavaScript calls `/api/user-info`, determines the role, and shows the relevant sections. Navigation is implemented by hiding and showing DOM sections rather than using a client-side router.
-
-### 12.2 Student form payload
-
-`allotment.js` reads DOM values, creates the student JSON object, and sends it with `fetch()` to `/saveStudents`. It generates `submittedTime` using `new Date().toISOString()`.
-
-### 12.3 Admin interactions
-
-- Categories and rooms are fetched dynamically.
-- Allotment requests are submitted asynchronously.
-- Results are rendered into an HTML table.
-- Statistics are built from `/api/admin/allotment-stats`.
-- Allotment history is built from `/api/admin/allotments`.
-- A run's groups are fetched only when its PDF is requested.
-- jsPDF and AutoTable generate downloadable PDFs entirely in the browser.
-
-### 12.4 Static resources
-
-| URL | Resource |
-|---|---|
-| `/styles.css` | Main CSS |
-| `/scripts/allotment.js` | All client behavior and API calls |
-| `/src/ssn_logo.png` | Logo image |
-
-## 13. Configuration
-
-### 13.1 Spring Boot environment variables
+### 12.1 Spring Boot environment variables
 
 | Variable | Required | Default | Meaning |
 |---|---|---|---|
 | `GOOGLE_CLIENT_ID` | Yes for OAuth | None | Google OAuth client ID |
 | `GOOGLE_CLIENT_SECRET` | Yes for OAuth | None | Google OAuth client secret |
-| `DB_URL` | No | `jdbc:h2:file:./data/stableromie;DB_CLOSE_ON_EXIT=FALSE;MODE=PostgreSQL` | JDBC connection URL |
+| `DB_URL` | No | `jdbc:h2:file:./data/stableromie;DB_CLOSE_ON_EXIT=FALSE;MODE=PostgreSQL` | JDBC URL |
 | `DB_USERNAME` | No | `sa` | Database user |
 | `DB_PASSWORD` | No | Empty | Database password |
 | `DB_DRIVER` | No | `org.h2.Driver` | JDBC driver |
 | `DB_DIALECT` | No | `org.hibernate.dialect.H2Dialect` | Hibernate dialect |
-| `FLASK_API_URL` | No | `http://127.0.0.1:5000` in controller | Flask base URL |
+| `FLASK_API_URL` | No | `http://127.0.0.1:5000` | Flask base URL |
+| `SEED_TEST_STUDENTS` | No | `true` | Seed 200 test students when the student table is empty |
 
-### 13.2 Flask environment variables
+### 12.2 Google OAuth redirect URI
 
-| Variable | Required | Default | Meaning |
-|---|---|---|---|
-| `JAVA_BACKEND_URL` | No | `http://localhost:8080` | Spring Boot base URL used for callbacks |
+For local development: `http://localhost:8080/login/oauth2/code/google`. For deployment, use the equivalent HTTPS callback.
 
-### 13.3 Google OAuth redirect URI
+## 13. Running Locally
 
-For local development, configure:
+### 13.1 Prerequisites
 
-```text
-http://localhost:8080/login/oauth2/code/google
-```
+- Java 17, Maven, Python 3, Google OAuth client credentials, optional PostgreSQL 14.
 
-For deployment, configure the equivalent HTTPS callback on the deployed Java application domain.
-
-## 14. Running Locally
-
-### 14.1 Prerequisites
-
-- Java 17.
-- Maven compatible with the project.
-- Python capable of installing the pinned dependencies.
-- Google OAuth client credentials.
-- Optional PostgreSQL 14; otherwise H2 is used.
-
-### 14.2 Option A: Spring Boot with default H2 and Flask
+### 13.2 Option A: Spring Boot with default H2 and Flask
 
 Terminal 1:
 
@@ -1021,44 +678,29 @@ cd flask-api
 python3 -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
-export JAVA_BACKEND_URL="http://localhost:8080"
 python3 app.py
 ```
 
-Open:
+> macOS note: AirPlay Receiver occupies port 5000 by default, which breaks
+> Flask on that port. Either disable AirPlay Receiver in System Settings, or
+> run Flask on another port and start Java with `FLASK_API_URL` pointing at
+> it, e.g. `FLASK_API_URL=http://127.0.0.1:5001`.
 
-```text
-http://localhost:8080
-```
+Open `http://localhost:8080`.
 
-### 14.3 Option B: Local PostgreSQL
+### 13.3 Option B: Local PostgreSQL
 
-Create the `stableromie` database, then start Java with:
+Create the `stableromie` database, then start Java with `DB_URL`, `DB_USERNAME`, `DB_PASSWORD`, `DB_DRIVER=org.postgresql.Driver`, and `DB_DIALECT=org.hibernate.dialect.PostgreSQLDialect` set, plus the OAuth and Flask variables.
 
-```bash
-cd StableRoomie
-export GOOGLE_CLIENT_ID="your-client-id"
-export GOOGLE_CLIENT_SECRET="your-client-secret"
-export DB_URL="jdbc:postgresql://localhost:5432/stableromie"
-export DB_USERNAME="your-db-user"
-export DB_PASSWORD="your-db-password"
-export DB_DRIVER="org.postgresql.Driver"
-export DB_DIALECT="org.hibernate.dialect.PostgreSQLDialect"
-export FLASK_API_URL="http://127.0.0.1:5000"
-mvn spring-boot:run
-```
+### 13.4 Optional sample students
 
-The current repository has recorded PostgreSQL sequence/schema failures for category initialization on an existing database. See troubleshooting and known issues before using that environment for a demonstration.
-
-### 14.4 Optional sample students
-
-`students_seed.sql` contains 500 student inserts with IDs 1000 through 1499. It is not automatic. Apply it manually only after Hibernate has created the `student` table and only in a disposable development database.
+`students_seed.sql` contains 500 student inserts (IDs 1000-1499) with `room_type_pref_1/2/3` and staggered `created_at`/`updated_at` timestamps. Apply it manually only after Hibernate has created the `student` table and only in a disposable development database:
 
 ```bash
 psql -d stableromie -f students_seed.sql
 ```
 
-### 14.5 Basic health checks
+### 13.5 Basic health checks
 
 ```bash
 curl http://localhost:5000/health
@@ -1071,302 +713,79 @@ Expected unauthenticated Java response:
 {"authenticated":false}
 ```
 
-## 15. Docker Architecture
-
-### 15.1 Compose services
-
-```mermaid
-flowchart TB
-    INTERNET[Browser]
-    CADDY[Caddy :80/:443]
-    JAVA[Java :8080]
-    FLASK[Flask :5000]
-    PG[(PostgreSQL :5432)]
-    VOL[(Named volumes)]
-
-    INTERNET --> CADDY
-    CADDY --> JAVA
-    JAVA <--> FLASK
-    JAVA --> PG
-    PG --> VOL
-    CADDY --> VOL
-```
-
-`docker-compose.yml` starts:
-
-1. PostgreSQL and waits for `pg_isready`.
-2. Java after PostgreSQL is healthy.
-3. Flask after Java is started.
-4. Caddy after Java is started.
-
-Only PostgreSQL has a Compose health check. `depends_on` for Java/Flask does not prove the HTTP service is ready.
-
-### 15.2 Container build details
-
-- Java uses a Maven 3.9.6/Eclipse Temurin 17 build stage and a Temurin 17 JRE runtime stage.
-- Java packaging runs `mvn clean package -DskipTests`.
-- Flask uses Python 3.10 slim and Gunicorn on port 5000 with a 120-second timeout.
-- Caddy proxies `stableroomie.ssnce.dev` to `java-backend:8080` on the Compose network.
-
-### 15.3 Compose startup
-
-Provide OAuth values in the shell or an uncommitted environment file, then run:
+### 13.6 Running tests
 
 ```bash
-export GOOGLE_CLIENT_ID="your-client-id"
-export GOOGLE_CLIENT_SECRET="your-client-secret"
-docker compose up --build
+cd StableRoomie
+mvn test
 ```
 
-The Compose file contains a development database password. Replace it and use secret management before any real deployment.
+`AllotmentServiceTest` verifies the Lock & Allot pipeline end to end against an in-memory H2 database and a stub Flask endpoint: preference fill by update time, department-sorted two-phase grouping, persistence into `room_groups` + `allotment`, unallotted reporting, missing-`totalRooms` rejection, double-run rejection, and reset-and-rerun.
 
-## 16. Azure Deployment
-
-The repository targets two Azure Container Apps in a shared Container Apps Environment:
-
-- Java application on port 8080.
-- Flask application on port 5000.
-- Images stored in Azure Container Registry.
-- PostgreSQL managed separately.
-- External ingress and optional custom domain on the Java app.
-- Scale range recorded as zero to three replicas.
-
-### Required cloud configuration
-
-Java needs database, OAuth, and Flask URL variables. Flask needs the Java URL. These should use valid Container Apps service addresses and managed secrets.
-
-### Important script behavior
-
-`deploy/deploy-azure.sh` builds and pushes both images, then creates or updates the Container Apps. It does **not** set the required runtime environment variables; it explicitly leaves that as a next step. `StableRoomie/Dockerfile.deploy` also copies an already-built JAR rather than building it, so `mvn package` must have produced `target/StableRoomie-1.0.0.jar` before that image build.
-
-Use [`AZURE_DEPLOYMENT.md`](AZURE_DEPLOYMENT.md) as a reference, but validate resource names, environment variables, internal service URLs, database availability, and current Azure state before executing commands.
-
-## 17. Error Handling and Edge Cases
+## 14. Error Handling and Edge Cases
 
 | Case | Current behavior |
 |---|---|
-| Unauthenticated protected request | Spring Security starts login/denies access according to request type |
-| OAuth principal missing at `/process` | Redirect to `/login` |
-| OAuth user has no email | OAuth authentication exception |
-| Student profile absent | `/api/student/profile` returns 404; allotment API asks profile completion |
-| Student already grouped | Profile save returns HTTP 400 with locked-preferences message |
-| Invalid category | Service throws `IllegalArgumentException` |
-| Invalid `numStudents` | Defaults to 100 |
-| Location `both` | Location filter is skipped |
-| No eligible students | Flask returns HTTP 400 |
-| Java student lookup fails | Flask returns HTTP 500 with upstream status/text |
-| Java group save fails | Flask returns HTTP 500 with upstream status/text |
-| Flask is unreachable | Spring returns HTTP 500 with exception message in JSON text |
-| Final group smaller than capacity | Persisted as a partially filled group |
-| Capacity is 1 | Every student becomes an individual group |
-| Missing room type in DB | Persistence creates a room with that type and null capacity |
-| Legacy groups have null run ID | History GET creates a legacy run and updates those groups |
-| Room/student referenced by group is missing | Lookup omits/falls back rather than enforcing a foreign key |
+| Lock & Allot with missing `totalRooms` on any type | HTTP 400 with the room type named |
+| Lock & Allot with missing/invalid `capacity` on any type | HTTP 400 with the room type named |
+| Lock & Allot with no students | HTTP 400 "No students have submitted their preferences yet." |
+| Lock & Allot run twice | HTTP 400 "Allotment has already been finalized..." |
+| Student edits preferences after Lock & Allot | HTTP 400 locked message; form disabled in UI |
+| Room mutation while locked | HTTP 400; warden must reset first |
+| Student has fewer than 3 preferences | Remaining preference slots are skipped |
+| Preferred room type not configured | That preference is skipped; next one tried |
+| Student fits into no list | Reported as unallotted in results/PDF; no `allotment` row |
+| Total capacity < total students | Overflow students remain unallotted |
+| List size not divisible by capacity | Final room is partially filled (as in the legacy behavior) |
+| Flask unreachable | Lock & Allot fails with 500; transaction rolls back, nothing persisted |
+| Flask response malformed | Lock & Allot fails with 500; nothing persisted |
 
-## 18. Testing and Verification
+## 15. Known Issues and Technical Debt
 
-### Current state
+1. **Admin APIs lack role authorization** — any authenticated user can call admin endpoints directly.
+2. **No foreign keys** — `room_groups.room_id` and `allotment.student_id` are plain numeric columns (the student_id UNIQUE constraint exists, but no FK integrity).
+3. **`groups` is a reserved SQL keyword** — the physical table is named `room_groups`; entity class is `Groups`.
+4. **OAuth domain is not enforced** — `ALLOWED_DOMAIN` is declared but never checked.
+5. **Student ID is client-controlled** and acts as the primary key, allowing accidental overwrite of another row.
+6. **CSRF disabled** while session cookies authenticate mutations; CORS unrestricted.
+7. **Room deletion while groups exist** can orphan groups (mutations are blocked while locked, but resetting + deleting a used type can still orphan historical rows).
+8. **Preferred-roommate names are ambiguous** when names are duplicated.
+9. **No database migrations** — Hibernate `ddl-auto=update` manages the schema; automated coverage is limited to the integration test for the allotment pipeline ([`AllotmentServiceTest`](StableRoomie/src/test/java/in/edu/ssn/hostel/service/AllotmentServiceTest.java)).
+10. **Dead code remains** — `flask-api/app_temp.py`, `flask-api/model/students.py`, and several unused Python dependencies.
+11. **MongoDB starter** is declared but auto-configuration is excluded and no MongoDB code is used.
+12. **Secrets need operational review** — local environment files may contain credentials; keep only placeholders in version control.
 
-- The project declares `spring-boot-starter-test`.
-- No Java `src/test` directory is present.
-- No Flask test suite is present.
-- Docker's Java build skips tests.
-- The repository therefore has no automated regression coverage for controllers, security, repositories, matching, or service integration.
+## 16. Improvement Roadmap
 
-### Recommended test pyramid
+### Phase 1: Correctness and integrity
 
-#### Unit tests
+1. Add `@Transactional` guarantees already present in `AllotmentService` to any future multi-write flows.
+2. Add input validation for capacity, totalRooms, and student IDs.
+3. Expand automated coverage beyond `AllotmentServiceTest` to controllers, security, room mutations, and PDF data.
+4. Fix `year` serialization/rendering consistency (backend `year`, frontend uses `student.year`).
 
-- Time conversion around noon/midnight.
-- Every compatibility-score component and maximum score.
-- Mutual, one-way, and no-preference behavior.
-- Capacity 1, 2, 3, 4, empty input, duplicate names, and incomplete final groups.
-- Category normalization and invalid category handling.
-- Group persistence slot counting.
+### Phase 2: Security
 
-#### Spring integration tests
-
-- OAuth-authenticated student profile save/read.
-- ADMIN versus STUDENT authorization for every admin API.
-- Repository exclusion of already-grouped students.
-- Transaction rollback if group persistence fails after creating a run.
-- H2 and PostgreSQL schema compatibility.
-
-#### Flask tests
-
-- Mock Java `/getStudents` and `/save-groups`.
-- Verify status propagation and malformed upstream JSON.
-- Validate capacity boundaries.
-- Verify generated display groups.
-
-#### End-to-end tests
-
-- Login -> preference submission -> admin allotment -> student result.
-- Re-running an allotment excludes assigned students.
-- PDF result data matches persisted groups.
-
-### Manual smoke-test checklist
-
-1. Start Java, Flask, and the database.
-2. Confirm Flask `/health` and unauthenticated Java `/api/user-info`.
-3. Sign in as a student and save a complete profile.
-4. Confirm profile reload and `allotted: false`.
-5. Sign in as admin and verify the student appears.
-6. Confirm categories and rooms load.
-7. Run an allotment with eligible students.
-8. Confirm a run and group rows are persisted.
-9. Sign back in as the student and verify roommates.
-10. Confirm preference updates are rejected after allotment.
-
-Step 7 currently fails on the known `student_map` error until that bug is fixed.
-
-## 19. Known Issues and Technical Debt
-
-This section is intentionally explicit so the project can be discussed honestly in interviews.
-
-### Critical/high-priority
-
-1. **Allotment success path is broken:** `flask-api/app.py` refers to `student_map`, but that variable exists only locally inside `allot.allotment()`. A non-empty run reaches a `NameError` before saving groups.
-2. **Admin APIs lack role authorization:** any authenticated user can directly call admin endpoints.
-3. **Public internal APIs expose/write data:** `/getStudents` and `/save-groups` are public, and Flask has no service authentication.
-4. **OAuth domain is not enforced:** `ALLOWED_DOMAIN` is declared but never checked.
-5. **Every group in a run receives the same room ID:** room availability and capacity are not used when selecting rooms.
-6. **No database foreign keys for group references:** invalid and duplicate assignments are possible.
-7. **PostgreSQL sequence mismatch has appeared in runtime logs:** category default insertion can fail with a null primary key on the existing PostgreSQL schema.
-8. **Secrets need operational review:** local environment files may contain credentials; rotate exposed credentials and keep only placeholders in documentation/version control.
-
-### Medium-priority
-
-9. Student ID is client-controlled and acts as the primary key, allowing accidental overwrite of another row.
-10. CSRF is disabled while session cookies authenticate mutations.
-11. Full `Student` entities expose more personal data than most endpoints need.
-12. `findGroupByStudentId` and room-type lookup return one `Optional` even though the schema permits multiple matches.
-13. Allotment history GET mutates the database while migrating legacy rows.
-14. `submittedTime` uses `LocalDateTime` with a JSON pattern containing a literal `Z`, which does not model an actual UTC offset.
-15. Preferred-roommate names are ambiguous when names are duplicated.
-16. Category input maps every non-`ssn` prefix to Shiv Nadar University.
-17. The frontend reads `student.studentYear`, while the backend serializes the property as `year`.
-18. Category creation accepts a raw JSON string and may persist surrounding quotes.
-19. Room capacity is neither enforced nor used for choosing distinct rooms.
-20. There is no transaction boundary around saving a run and all its groups.
-
-### Low-priority/dead code
-
-21. `/edit-room-type` is a no-op.
-22. `app_temp.py`, `model/students.py`, several repository methods, and several Python dependencies are unused.
-23. MongoDB starter is declared but auto-configuration is excluded and no MongoDB code is used.
-24. Existing operational documents contain stale ports/runtime descriptions; active `app.py` uses port 5000.
-25. No automated tests or database migrations exist.
-
-## 20. Placement and Interview Preparation
-
-### 20.1 60-second project explanation
-
-> StableRoomie is a full-stack roommate recommendation and hostel allotment system. I used Spring Boot as the main web and persistence layer, Google OAuth for identity, a server-rendered vanilla-JavaScript dashboard, and a Flask service for graph matching. Students submit lifestyle preferences, while an admin filters eligible unassigned students and starts an allotment. Flask first honors fully mutual roommate choices, then creates a weighted compatibility graph and applies Louvain community detection. Spring Boot persists each run and generated groups in H2 or PostgreSQL and exposes student and admin dashboards. The system is containerized with Docker Compose and has an Azure Container Apps deployment path.
-
-### 20.2 Why this architecture?
-
-- **Spring Boot:** strong MVC, security, JPA, and relational transaction ecosystem.
-- **Flask/Python:** direct use of NetworkX and python-louvain for graph algorithms.
-- **Relational database:** students, room types, runs, and group membership have structured relationships and reporting requirements.
-- **Single frontend template:** simple deployment with no separate Node build or frontend server.
-- **Synchronous HTTP:** easy to understand and suitable for the current batch-style workflow, though a job queue would scale better.
-
-### 20.3 Important design trade-offs
-
-| Decision | Benefit | Cost |
-|---|---|---|
-| Java + Python services | Best-fit ecosystem for web/security and graph algorithms | More deployment and failure modes |
-| Synchronous allotment | Immediate result and simple UI | Long request, tight service coupling |
-| Louvain communities | Uses global weighted graph structure | Community size does not equal room size |
-| Explicit mutual-preference pass | Respects reciprocal user choice | Combination cost and name ambiguity |
-| Four group columns | Easy initial reads/writes | Denormalized, fixed capacity, poor integrity |
-| Hibernate `ddl-auto=update` | Fast development setup | No controlled production migrations |
-| Hard-coded admin email | Very simple prototype | Not scalable or secure role management |
-
-### 20.4 Questions an interviewer may ask
-
-#### Why Louvain instead of only greedy sorting?
-
-Louvain uses weighted graph structure to find communities with stronger internal connections. A purely greedy pair choice can consume a locally strong match and reduce total group quality. The current implementation still chunks community members naively, so a stronger version would optimize fixed-size grouping inside each community.
-
-#### How do you prevent re-allotment?
-
-The filtering JPQL excludes IDs found in any of the four group slots. The profile endpoint also refuses updates for a student ID already present in a group. This works at application level but should be reinforced with a normalized membership table and a database uniqueness constraint.
-
-#### How would you scale allotment?
-
-Move allotment to an asynchronous job, persist job state, publish work through a queue, make results idempotent, and notify/poll the UI. Avoid sending full personal records, cache static categories/room types, add indexes to filtering fields, and replace four exclusion subqueries with a normalized indexed membership relation.
-
-#### How would you secure service-to-service calls?
-
-Use an internal network plus a service credential or signed token, protect `/getStudents` and `/save-groups`, restrict Flask ingress, validate payloads, authorize admin actions with `ROLE_ADMIN`, enable CSRF for browser mutations, and return purpose-specific DTOs.
-
-#### How would you improve database design?
-
-Use `users/roles`, `students`, `room_types`, `rooms`, `allotment_runs`, `groups`, and `group_members`. Add foreign keys, unique constraints, status fields, audit timestamps, and transactionally enforce that one student has at most one active allotment.
-
-#### What happens if Flask fails after calculating groups?
-
-The Java proxy returns an error, and no groups are saved if failure occurs before the callback. If Java partially saves a run and then fails mid-loop, the lack of an explicit transaction can leave partial data. The fix is transactional persistence plus idempotency keys per allotment run.
-
-#### Is this machine learning?
-
-The active implementation is graph-based optimization/heuristic matching, not a trained predictive model. Compatibility weights are manually defined, and Louvain performs community detection. It is more accurate to describe it as a recommendation or graph matching algorithm.
-
-### 20.5 Strong discussion points
-
-- Polyglot service integration and its operational trade-offs.
-- OAuth login versus application authorization.
-- Graph construction and weighted compatibility design.
-- Data-integrity weaknesses of denormalized columns.
-- Synchronous batch requests versus asynchronous jobs.
-- H2/PostgreSQL parity and why migrations matter.
-- Privacy boundaries for student personal information.
-- Honest identification of prototype versus production readiness.
-
-## 21. Improvement Roadmap
-
-### Phase 1: Restore correctness
-
-1. Define `student_map` in Flask before formatting response groups.
-2. Add input validation for capacity, category, group size, and student IDs.
-3. Wrap allotment-run/group persistence in `@Transactional`.
-4. Repair PostgreSQL sequences with a versioned migration.
-5. Fix `year` rendering and category-string handling.
-6. Add automated unit/integration tests for the full success path.
-
-### Phase 2: Secure the application
-
-1. Convert OAuth role attribute to real `ROLE_ADMIN`/`ROLE_STUDENT` authorities.
+1. Convert the OAuth role attribute to real `ROLE_ADMIN`/`ROLE_STUDENT` authorities.
 2. Apply route- and method-level role authorization.
-3. Enforce the institutional email domain if that is the product requirement.
-4. Enable CSRF protection for browser requests.
-5. Restrict CORS and Flask ingress.
-6. Authenticate Java-Flask calls.
-7. Replace entities in responses with privacy-minimized DTOs.
-8. Rotate credentials and use managed secret storage.
+3. Enforce the institutional email domain.
+4. Enable CSRF protection and restrict CORS/Flask ingress.
+5. Return privacy-minimized DTOs instead of full entities.
 
-### Phase 3: Normalize persistence
+### Phase 3: Persistence
 
-1. Split room type from physical room.
-2. Replace `student_1..4` with `group_members(group_id, student_id)`.
-3. Add foreign keys, uniqueness rules, and useful indexes.
-4. Add run state such as `PENDING`, `RUNNING`, `COMPLETED`, `FAILED`.
-5. Use Flyway or Liquibase migrations.
-6. Allocate a distinct physical room to each completed group.
+1. Add real foreign keys and useful indexes (`allotment.student_id`, `room_groups.room_id`).
+2. Use Flyway or Liquibase migrations instead of `ddl-auto=update`.
+3. Consider an explicit `allotment_status` flag if a re-run/partial-flow workflow is ever needed.
 
-### Phase 4: Improve matching and scalability
+### Phase 4: Matching and scale
 
-1. Use student IDs instead of names for preferences.
-2. Optimize fixed-size groups inside Louvain communities.
-3. Define deterministic tie-breaking and a reproducible random seed if applicable.
-4. Measure aggregate compatibility and fairness metrics.
-5. Run allotment asynchronously through a job queue.
-6. Add retries, timeouts, circuit breaking, tracing, and structured logs.
-7. Load-test graph creation and memory use on realistic cohort sizes.
+1. Use student IDs instead of names for roommate preferences.
+2. Optimize fixed-size grouping inside Louvain communities (currently naive chunking).
+3. Add deterministic tie-breaking and reproducible seeds.
+4. Run allotment asynchronously with retries/timeouts if lists grow large.
 
-## 22. Source Map
+## 17. Source Map
 
 | Topic | Primary source |
 |---|---|
@@ -1375,11 +794,10 @@ The active implementation is graph-based optimization/heuristic matching, not a 
 | OAuth role mapping | [`CustomOAuth2UserService.java`](StableRoomie/src/main/java/in/edu/ssn/hostel/service/CustomOAuth2UserService.java) |
 | Login/dashboard routing | [`LoginController.java`](StableRoomie/src/main/java/in/edu/ssn/hostel/controller/LoginController.java), [`DashboardController.java`](StableRoomie/src/main/java/in/edu/ssn/hostel/controller/DashboardController.java) |
 | Student APIs | [`StudentController.java`](StableRoomie/src/main/java/in/edu/ssn/hostel/controller/StudentController.java) |
-| Allotment proxy/history | [`groupsController.java`](StableRoomie/src/main/java/in/edu/ssn/hostel/controller/groupsController.java) |
-| Filtering | [`studentService.java`](StableRoomie/src/main/java/in/edu/ssn/hostel/service/studentService.java), [`studentRepo.java`](StableRoomie/src/main/java/in/edu/ssn/hostel/repo/studentRepo.java) |
-| Group persistence | [`GroupService.java`](StableRoomie/src/main/java/in/edu/ssn/hostel/service/GroupService.java) |
+| Lock & Allot / results / reset | [`AdminAllotmentController.java`](StableRoomie/src/main/java/in/edu/ssn/hostel/controller/AdminAllotmentController.java), [`AllotmentService.java`](StableRoomie/src/main/java/in/edu/ssn/hostel/service/AllotmentService.java) |
+| Room management | [`roomsController.java`](StableRoomie/src/main/java/in/edu/ssn/hostel/controller/roomsController.java), [`roomService.java`](StableRoomie/src/main/java/in/edu/ssn/hostel/service/roomService.java) |
 | Entities | [`model/`](StableRoomie/src/main/java/in/edu/ssn/hostel/model/) |
-| Flask orchestration | [`flask-api/app.py`](flask-api/app.py) |
+| Flask two-phase endpoint | [`flask-api/app.py`](flask-api/app.py) |
 | Matching algorithm | [`flask-api/service/allot.py`](flask-api/service/allot.py) |
 | Frontend | [`index.html`](StableRoomie/src/main/resources/templates/index.html), [`allotment.js`](StableRoomie/src/main/resources/static/scripts/allotment.js), [`styles.css`](StableRoomie/src/main/resources/static/styles.css) |
 | Runtime configuration | [`application.properties`](StableRoomie/src/main/resources/application.properties), [`docker-compose.yml`](docker-compose.yml) |

@@ -2,11 +2,14 @@ package in.edu.ssn.hostel.model;
 
 import java.time.LocalDateTime;
 
-import com.fasterxml.jackson.annotation.JsonFormat;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreUpdate;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -45,8 +48,14 @@ public class Student {
     @Column(name = "study_time")
     private String studyTime;
 
-    @Column(name = "room_type")
-    private String roomType;
+    @Column(name = "room_type_pref_1")
+    private String roomTypePref1;
+
+    @Column(name = "room_type_pref_2")
+    private String roomTypePref2;
+
+    @Column(name = "room_type_pref_3")
+    private String roomTypePref3;
 
     @Column(name = "address")
     private String address;
@@ -69,15 +78,30 @@ public class Student {
     @Column(name = "noise_level")
     private String noiseLevel;
 
-    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
-    @Column(name = "submitted_time")
-    private LocalDateTime submittedTime;
-
     @Column(name = "location")
     private String location;
 
     @Column(name = "email", unique = true)
     private String email;
+
+    @CreationTimestamp
+    @Column(name = "created_at", updatable = false)
+    private LocalDateTime createdAt;
+
+    @UpdateTimestamp
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt;
+
+    @PrePersist
+    protected void onCreate() {
+        if (createdAt == null) createdAt = LocalDateTime.now();
+        if (updatedAt == null) updatedAt = LocalDateTime.now();
+    }
+
+    @PreUpdate
+    protected void onUpdate() {
+        updatedAt = LocalDateTime.now();
+    }
 
     // Explicit getters and setters
     public int getStudentId() { return studentId; }
@@ -107,8 +131,14 @@ public class Student {
     public String getStudyTime() { return studyTime; }
     public void setStudyTime(String studyTime) { this.studyTime = studyTime; }
 
-    public String getRoomType() { return roomType; }
-    public void setRoomType(String roomType) { this.roomType = roomType; }
+    public String getRoomTypePref1() { return roomTypePref1; }
+    public void setRoomTypePref1(String roomTypePref1) { this.roomTypePref1 = roomTypePref1; }
+
+    public String getRoomTypePref2() { return roomTypePref2; }
+    public void setRoomTypePref2(String roomTypePref2) { this.roomTypePref2 = roomTypePref2; }
+
+    public String getRoomTypePref3() { return roomTypePref3; }
+    public void setRoomTypePref3(String roomTypePref3) { this.roomTypePref3 = roomTypePref3; }
 
     public String getAddress() { return address; }
     public void setAddress(String address) { this.address = address; }
@@ -131,12 +161,15 @@ public class Student {
     public String getNoiseLevel() { return noiseLevel; }
     public void setNoiseLevel(String noiseLevel) { this.noiseLevel = noiseLevel; }
 
-    public LocalDateTime getSubmittedTime() { return submittedTime; }
-    public void setSubmittedTime(LocalDateTime submittedTime) { this.submittedTime = submittedTime; }
-
     public String getLocation() { return location; }
     public void setLocation(String location) { this.location = location; }
 
     public String getEmail() { return email; }
     public void setEmail(String email) { this.email = email; }
+
+    public LocalDateTime getCreatedAt() { return createdAt; }
+    public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
+
+    public LocalDateTime getUpdatedAt() { return updatedAt; }
+    public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
 }

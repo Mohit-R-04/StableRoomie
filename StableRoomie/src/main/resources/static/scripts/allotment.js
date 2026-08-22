@@ -1,18 +1,23 @@
+/* ------------------------------------------------------------------ */
+/* Student preference submission                                       */
+/* ------------------------------------------------------------------ */
+
 document
   .querySelector(".js-submitIt")
   .addEventListener("click", async (event) => {
     event.preventDefault();
-    const tym = new Date().toISOString();
     const name = document.querySelector(".js-name").value;
     const clg = document.querySelector(".js-clg").value;
     const sleep = document.querySelector(".js-sleep").value;
     const wake = document.querySelector(".js-wake").value;
-    const department = document.querySelector(".js-department").value;
+    const department = document.querySelector(".js-department").value.trim().toUpperCase();
     const year = document.querySelector(".js-year").value;
     const phone = document.querySelector(".js-phone").value;
     const studentId = Number(document.querySelector(".js-studentId").value);
     const studyTime = document.querySelector(".js-study").value;
-    const room = document.querySelector(".js-room").value;
+    const roomTypePref1 = document.querySelector(".js-room-pref1").value;
+    const roomTypePref2 = document.querySelector(".js-room-pref2").value;
+    const roomTypePref3 = document.querySelector(".js-room-pref3").value;
     const address = document.querySelector(".js-home").value;
     const emergencyContact = document.querySelector(".js-emergency").value;
     const roomMates = document.querySelector(".js-friends").value;
@@ -22,12 +27,25 @@ document
     const noise = document.querySelector(".js-noise").value;
     const location = document.querySelector(".js-location").value;
 
-    // Map the clg value to the full name expected by the backend
+    if (!department) {
+      showToast("Please enter your department.", "warning");
+      return;
+    }
+    if (!roomTypePref1) {
+      showToast("Please select your 1st choice room type.", "warning");
+      return;
+    }
+    const prefs = [roomTypePref1, roomTypePref2, roomTypePref3].filter((p) => p);
+    if (new Set(prefs).size !== prefs.length) {
+      showToast("Room type preferences must all be different.", "warning");
+      return;
+    }
+
     const clgFullName = clg === "ssn" ? "SSN College" : "Shiv Nadar University";
 
     const payload = {
       name: name,
-      clg: clgFullName, // Use the full name for the backend
+      clg: clgFullName,
       sleepTime: sleep,
       wakeTime: wake,
       department: department,
@@ -35,7 +53,9 @@ document
       phone: phone,
       studentId: studentId,
       studyTime: studyTime,
-      roomType: room,
+      roomTypePref1: roomTypePref1,
+      roomTypePref2: roomTypePref2,
+      roomTypePref3: roomTypePref3,
       address: address,
       emergencyContact: emergencyContact,
       preferredRoommates: roomMates,
@@ -43,309 +63,123 @@ document
       cleanliness: clean,
       lightSensitivity: light,
       noiseLevel: noise,
-      submittedTime: tym,
       location: location,
     };
 
     try {
       const response = await fetch("/saveStudents", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
 
       if (!response.ok) {
-        throw new Error(`HTTP error! Status: ${response.status}`);
+        const err = await response.json().catch(() => ({}));
+        throw new Error(err.message || `HTTP error! Status: ${response.status}`);
       }
 
       const result = await response.json();
       console.log("Success:", result);
-      alert("Preferences saved successfully!");
-      await loadStudentProfile(); // Refresh status badge & pre-fill fields
+      showToast("Preferences saved successfully!", "success");
+      await loadStudentProfile();
       switchSection("student-overview", document.getElementById("link-student-overview"));
     } catch (error) {
       console.error("Error:", error);
-      alert("Failed to save preferences. Please try again.");
+      showToast("Failed to save preferences: " + error.message, "error");
     }
   });
 
-function allotRooms() {
-  const category = document.getElementById("category").value;
-  const roomTypeSelect = document.getElementById("allot-room-type");
-  const roomType = roomTypeSelect.value;
-  const selectedOption = roomTypeSelect.options[roomTypeSelect.selectedIndex];
-  const capacity = selectedOption ? parseInt(selectedOption.getAttribute("data-capacity") || "3") : 3;
+/* ------------------------------------------------------------------ */
+/* Toast notifications + confirm dialogs                               */
+/* ------------------------------------------------------------------ */
 
-  const numStudents = document.getElementById("num-students").value;
-  const location = document.getElementById("allot-location").value;
-  if (!(location && category && roomType && numStudents)) {
-    alert("Please fill all details (Location, Category, Room Type, and Number of Students)");
-    return false;
+function showToast(message, type = "info", duration = 4000) {
+  let container = document.getElementById("toast-container");
+  if (!container) {
+    container = document.createElement("div");
+    container.id = "toast-container";
+    container.className = "toast-container";
+    document.body.appendChild(container);
   }
+  const toast = document.createElement("div");
+  toast.className = `toast toast-${type}`;
+  const icon = type === "success" ? "✓" : type === "error" ? "✕" : type === "warning" ? "⚠" : "ℹ";
+  toast.innerHTML = `
+    <span class="toast-icon">${icon}</span>
+    <span class="toast-msg"></span>
+    <button class="toast-close" aria-label="Dismiss">×</button>
+  `;
+  toast.querySelector(".toast-msg").textContent = message;
+  toast.querySelector(".toast-close").addEventListener("click", () => dismissToast(toast));
+  container.appendChild(toast);
+  setTimeout(() => dismissToast(toast), duration);
+}
 
-  // Show loading state
-  const allotBtn = document.querySelector('.dashboard-card .btn.primary[onclick="allotRooms()"]');
-  if (allotBtn) {
-    allotBtn.textContent = "Allotting...";
-    allotBtn.disabled = true;
-  }
+function dismissToast(toast) {
+  if (!toast || toast.classList.contains("toast-out")) return;
+  toast.classList.add("toast-out");
+  setTimeout(() => toast.remove(), 300);
+}
 
-  document.getElementById("allotment-results").style.display = "none";
+/**
+ * Promise-based confirmation dialog. Resolves true on confirm, false on
+ * cancel / overlay click / Escape.
+ */
+function showConfirmDialog({ title, message, confirmLabel = "Confirm", cancelLabel = "Cancel", danger = false, icon = "❓" }) {
+  return new Promise((resolve) => {
+    const overlay = document.createElement("div");
+    overlay.className = "confirm-overlay";
+    overlay.innerHTML = `
+      <div class="confirm-dialog" role="dialog" aria-modal="true" aria-label="${title}">
+        <div class="confirm-icon ${danger ? "confirm-icon-danger" : ""}">${icon}</div>
+        <h3 class="confirm-title"></h3>
+        <div class="confirm-message"></div>
+        <div class="confirm-actions">
+          <button class="btn secondary confirm-cancel"></button>
+          <button class="btn ${danger ? "remove" : "primary"} confirm-ok"></button>
+        </div>
+      </div>
+    `;
+    overlay.querySelector(".confirm-title").textContent = title;
+    overlay.querySelector(".confirm-message").innerHTML = message;
+    overlay.querySelector(".confirm-cancel").textContent = cancelLabel;
+    overlay.querySelector(".confirm-ok").textContent = confirmLabel;
 
-  fetch("/allot_roommates", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      location: location,
-      category: category,
-      roomType: roomType,
-      numStudents: numStudents,
-      capacity: capacity
-    }),
-  })
-    .then((response) => {
-      if (!response.ok) {
-        return response.json().then((err) => {
-          throw new Error(err.message || `HTTP error! status: ${response.status}`);
-        }).catch(() => {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        });
-      }
-      return response.json();
-    })
-    .then((data) => {
-      // Show the message from backend
-      if (data.message) {
-        window.alert(data.message);
-      }
-      
-      // Display the allotment results
-      if (data.groups && data.groups.length > 0) {
-        const resultsContainer = document.getElementById("results-container");
-        resultsContainer.innerHTML = "";
-        
-        const tableResponsive = document.createElement("div");
-        tableResponsive.className = "table-responsive";
-        
-        const table = document.createElement("table");
-        table.className = "modern-table";
-        
-        let tableHeader = `
-          <thead>
-            <tr>
-              <th>Group</th>
-              <th>Student 1</th>
-              <th>Student 2</th>
-              <th>Student 3</th>
-              <th>Student 4</th>
-            </tr>
-          </thead>
-        `;
-        table.innerHTML = tableHeader;
-        
-        const tbody = document.createElement("tbody");
-        data.groups.forEach((group, index) => {
-          const tr = document.createElement("tr");
-          tr.innerHTML = `
-            <td><strong>Group ${index + 1}</strong></td>
-            <td>${group.student_1 || "-"}</td>
-            <td>${group.student_2 || "-"}</td>
-            <td>${group.student_3 || "-"}</td>
-            <td>${group.student_4 || "-"}</td>
-          `;
-          tbody.appendChild(tr);
-        });
-        table.appendChild(tbody);
-        tableResponsive.appendChild(table);
-        resultsContainer.appendChild(tableResponsive);
-        
-        // Show results section
-        document.getElementById("allotment-results").style.display = "block";
-      } else if (data.message && !data.groups) {
-        // No groups but message exists (error or info)
-        document.getElementById("results-container").innerHTML = `<div class="info-message">${data.message}</div>`;
-        document.getElementById("allotment-results").style.display = "block";
-      }
-    })
-    .catch((error) => {
-      console.error("Error:", error);
-      alert("Allotment failed: " + error.message);
-      document.getElementById("results-container").innerHTML = `<div class="error-message">Error: ${error.message}</div>`;
-      document.getElementById("allotment-results").style.display = "block";
-    })
-    .finally(() => {
-      if (allotBtn) {
-        allotBtn.textContent = "Allot Rooms";
-        allotBtn.disabled = false;
-      }
+    const cleanup = (result) => {
+      overlay.removeEventListener("keydown", onKey);
+      overlay.remove();
+      resolve(result);
+    };
+    const onKey = (e) => {
+      if (e.key === "Escape") cleanup(false);
+      if (e.key === "Enter" && document.activeElement.classList.contains("confirm-ok")) cleanup(true);
+    };
+    overlay.querySelector(".confirm-ok").addEventListener("click", () => cleanup(true));
+    overlay.querySelector(".confirm-cancel").addEventListener("click", () => cleanup(false));
+    overlay.addEventListener("click", (e) => {
+      if (e.target === overlay) cleanup(false);
     });
+    document.addEventListener("keydown", onKey);
+    document.body.appendChild(overlay);
+    setTimeout(() => overlay.querySelector(".confirm-ok").focus(), 50);
+  });
 }
 
-function showDashboard() {
-  showStudentDashboard();
-}
+/* ------------------------------------------------------------------ */
+/* Session / navigation helpers                                        */
+/* ------------------------------------------------------------------ */
 
 function showLanding() {
-  document
-    .querySelectorAll(".page")
-    .forEach((page) => page.classList.remove("active"));
+  document.querySelectorAll(".page").forEach((page) => page.classList.remove("active"));
   document.getElementById("landing-page").classList.add("active");
-
-  // Clear any stored session data
   clearSessionData();
 }
 
-// Function to handle logout
 function handleLogout() {
-  // Clear session data
   clearSessionData();
-
-  // Redirect to logout endpoint
   window.location.href = "/logout";
 }
 
-function showPreferences() {
-  document
-    .querySelectorAll(".page")
-    .forEach((page) => page.classList.remove("active"));
-  document.getElementById("preferences-page").classList.add("active");
-  // Populate department dropdown when preferences page is shown
-  getDepartmentFromCategories();
-}
-
-function showAddCategoryModal() {
-  const modalTemplate = document
-    .getElementById("modal-template")
-    .content.cloneNode(true);
-  modalTemplate.querySelector(".modal-body").innerHTML = `
-          <h3>Add Category</h3>
-          <form class="form">
-            <div class="form-group">
-              <label for="category-name">Category Name</label>
-              <select id="category-college" class="form-input">
-                <option value="">-- Select College --</option>
-                <option value="ssn">SSN</option>
-                <option value="snu">SNU</option>
-              </select>
-              <input type ="text" placeholder ="Department" id="category-department" class="form-input"/>
-              <select id="category-year" class="form-input">
-                <option value="">-- Select Year --</option>
-                <option value="1st">1st</option>
-                <option value="2nd">2nd</option>
-                <option value="3rd">3rd</option>
-                <option value="4th">4th</option>
-                <option value="5th">5th</option>
-              </select>
-            </div>
-            <button onclick="addCategory()" class="btn primary">Add Category</button>
-          </form>
-        `;
-  document.body.appendChild(modalTemplate);
-  attachModalClose();
-}
-
-async function showCategory() {
-  try {
-    const response = await fetch("/get-category");
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-    const categories = await response.json();
-    const categoryList = document.getElementById("category-list");
-
-    // Clear existing content
-    categoryList.innerHTML = "";
-    console.log(categories);
-
-    // Add each category to the list
-    categories.forEach((category) => {
-      const categoryItem = document.createElement("div");
-      categoryItem.className = "category-item";
-
-      // Use the category value directly without parsing
-      const categoryValue = category.category || "";
-
-      categoryItem.innerHTML = `
-        <span> > Category Name : ${categoryValue}</span>
-        <div class="category-actions">
-          <button class="btn secondary small" onclick="showEditCategoryModal(${category.id}, '${categoryValue}')">Edit</button>
-          <button class="btn secondary small remove" onclick="removeCategory(${category.id})">Remove</button>
-        </div>
-      `;
-      categoryList.appendChild(categoryItem);
-    });
-  } catch (error) {
-    console.error("Error fetching categories:", error);
-    const categoryList = document.getElementById("category-list");
-    categoryList.innerHTML =
-      '<div class="error-message">Failed to load categories. Please try again later.</div>';
-  }
-}
-
-// Call this function when the page loads
-document.addEventListener("DOMContentLoaded", function () {
-  showCategory();
-  showRooms();
-  checkUserRoleAndShowDashboard();
-  sendRoomAndHostel();
-});
-
-// Call this function after adding, editing, or removing a category
-function refreshCategories() {
-  showCategory();
-}
-
-// Function to check user role and show appropriate dashboard
-async function checkUserRoleAndShowDashboard() {
-  try {
-    // Check if user is authenticated by trying to access user info
-    const response = await fetch("/api/user-info", {
-      method: "GET",
-      credentials: "include",
-    });
-
-    if (response.ok) {
-      const userInfo = await response.json();
-      console.log("User info:", userInfo);
-
-      if (userInfo.authenticated) {
-        const role = userInfo.role;
-        console.log("User role:", role);
-
-        // Store user info in session storage for cross-tab communication
-        sessionStorage.setItem("userRole", role);
-        sessionStorage.setItem("userEmail", userInfo.email);
-        sessionStorage.setItem("isAuthenticated", "true");
-
-        if (role === "ADMIN") {
-          showAdminDashboard();
-        } else if (role === "STUDENT") {
-          showStudentDashboard();
-          loadStudentProfile();
-        } else {
-          showLanding();
-        }
-      } else {
-        // User not authenticated, clear session and show landing page
-        clearSessionData();
-        showLanding();
-      }
-    } else {
-      // User not authenticated, clear session and show landing page
-      clearSessionData();
-      showLanding();
-    }
-  } catch (error) {
-    console.error("Error checking user role:", error);
-    // On error, clear session and show landing page
-    clearSessionData();
-    showLanding();
-  }
-}
-
-// Function to clear session data
 function clearSessionData() {
   sessionStorage.removeItem("userRole");
   sessionStorage.removeItem("userEmail");
@@ -354,14 +188,41 @@ function clearSessionData() {
   localStorage.removeItem("userEmail");
 }
 
+async function checkUserRoleAndShowDashboard() {
+  try {
+    const response = await fetch("/api/user-info", { method: "GET", credentials: "include" });
+    if (response.ok) {
+      const userInfo = await response.json();
+      if (userInfo.authenticated) {
+        sessionStorage.setItem("userRole", userInfo.role);
+        sessionStorage.setItem("userEmail", userInfo.email);
+        sessionStorage.setItem("isAuthenticated", "true");
+        if (userInfo.role === "ADMIN") {
+          showAdminDashboard();
+        } else if (userInfo.role === "STUDENT") {
+          showStudentDashboard();
+          loadStudentProfile();
+        } else {
+          showLanding();
+        }
+        return;
+      }
+    }
+    clearSessionData();
+    showLanding();
+  } catch (error) {
+    console.error("Error checking user role:", error);
+    clearSessionData();
+    showLanding();
+  }
+}
+
 function switchSection(sectionId, element) {
-  // Hide all content sections
   document.querySelectorAll(".content-section").forEach((sec) => {
     sec.style.display = "none";
     sec.classList.remove("active");
   });
 
-  // Close mobile sidebar if open
   const sidebar = document.querySelector(".app-sidebar");
   const overlay = document.getElementById("sidebar-overlay");
   if (sidebar && sidebar.classList.contains("mobile-open")) {
@@ -369,38 +230,29 @@ function switchSection(sectionId, element) {
     if (overlay) overlay.style.display = "none";
   }
 
-  // Show the selected section
   const target = document.getElementById(sectionId);
   if (target) {
     target.style.display = "block";
     target.classList.add("active");
   }
 
-  // Update nav-link active class
-  document.querySelectorAll(".nav-link").forEach((link) => {
-    link.classList.remove("active");
-  });
-
+  document.querySelectorAll(".nav-link").forEach((link) => link.classList.remove("active"));
   if (element) {
     element.classList.add("active");
   } else {
-    // Attempt to locate link by sectionId
     const activeLink = document.getElementById(`link-${sectionId}`);
     if (activeLink) activeLink.classList.add("active");
   }
 
-  // Specific triggers for certain sections
   if (sectionId === "admin-tracking") {
     loadTrackPreferences();
-  } else if (sectionId === "admin-categories") {
-    showCategory();
   } else if (sectionId === "admin-rooms") {
     showRooms();
   } else if (sectionId === "admin-allotment") {
-    showCategoryForm();
+    loadRoomConfig();
   } else if (sectionId === "admin-overview") {
-    loadAllotmentHistory();
     loadAllotmentStats();
+    loadAllotmentResults();
   }
 }
 
@@ -412,54 +264,12 @@ function showAdminDashboard() {
   const badge = document.getElementById("user-role-badge");
   if (badge) badge.textContent = "Admin";
 
-  document.querySelectorAll(".admin-only").forEach(el => el.style.display = "");
-  document.querySelectorAll(".student-only").forEach(el => el.style.display = "none");
+  document.querySelectorAll(".admin-only").forEach((el) => (el.style.display = ""));
+  document.querySelectorAll(".student-only").forEach((el) => (el.style.display = "none"));
 
   switchSection("admin-overview", document.getElementById("link-admin-overview"));
-  loadAllotmentHistory();
   loadAllotmentStats();
-}
-
-async function loadAllotmentHistory() {
-  const historyList = document.getElementById("allotment-history-list");
-  if (!historyList) return;
-
-  try {
-    const response = await fetch("/api/admin/allotments");
-    if (!response.ok) throw new Error("Failed to fetch allotment history");
-    const data = await response.json();
-
-    historyList.innerHTML = "";
-    if (data.length === 0) {
-      historyList.innerHTML = `
-        <tr>
-          <td colspan="6" style="text-align: center; color: #64748b; padding: 20px;">No rooms have been allotted yet.</td>
-        </tr>
-      `;
-    } else {
-      data.forEach((item) => {
-        const tr = document.createElement("tr");
-        tr.innerHTML = `
-          <td><strong>#${item.id}</strong></td>
-          <td>${item.date}</td>
-          <td><span class="badge incomplete">${item.category || "All"}</span></td>
-          <td><span class="badge complete">${item.roomType}</span></td>
-          <td><strong>${item.studentCount} students</strong></td>
-          <td>
-            <button class="btn secondary small" onclick="downloadRunPDF(${item.id}, '${item.category || "All"}', '${item.roomType}', '${item.location || "both"}')">📄 PDF Chart</button>
-          </td>
-        `;
-        historyList.appendChild(tr);
-      });
-    }
-  } catch (error) {
-    console.error("Error loading allotment history:", error);
-    historyList.innerHTML = `
-      <tr>
-        <td colspan="4" style="text-align: center; color: #ef4444; padding: 20px;">Error loading allotment history. Please try again.</td>
-      </tr>
-    `;
-  }
+  loadAllotmentResults();
 }
 
 function showStudentDashboard() {
@@ -470,11 +280,791 @@ function showStudentDashboard() {
   const badge = document.getElementById("user-role-badge");
   if (badge) badge.textContent = "Student";
 
-  document.querySelectorAll(".student-only").forEach(el => el.style.display = "");
-  document.querySelectorAll(".admin-only").forEach(el => el.style.display = "none");
+  document.querySelectorAll(".student-only").forEach((el) => (el.style.display = ""));
+  document.querySelectorAll(".admin-only").forEach((el) => (el.style.display = "none"));
 
   switchSection("student-overview", document.getElementById("link-student-overview"));
   loadStudentAllotment();
+}
+
+function toggleDetailsList(containerId) {
+  const container = document.getElementById(containerId);
+  if (container) {
+    container.style.display = container.style.display === "none" ? "block" : "none";
+  }
+}
+
+function handleLoginWithAccountChooser() {
+  window.location.href = "/oauth2/authorization/google?prompt=select_account";
+}
+
+function toggleMobileSidebar() {
+  const sidebar = document.querySelector(".app-sidebar");
+  const overlay = document.getElementById("sidebar-overlay");
+  if (sidebar && overlay) {
+    sidebar.classList.toggle("mobile-open");
+    overlay.style.display = sidebar.classList.contains("mobile-open") ? "block" : "none";
+  }
+}
+
+document.addEventListener("DOMContentLoaded", function () {
+  showRooms();
+  checkUserRoleAndShowDashboard();
+  sendRoomAndHostel();
+});
+
+/* ------------------------------------------------------------------ */
+/* Admin: room types                                                   */
+/* ------------------------------------------------------------------ */
+
+async function showRooms() {
+  try {
+    const [roomsResp, resultsResp] = await Promise.all([
+      fetch("/get-rooms"),
+      fetch("/api/admin/allotment-results").catch(() => null),
+    ]);
+    if (!roomsResp.ok) throw new Error(`HTTP error! status: ${roomsResp.status}`);
+    const rooms = await roomsResp.json();
+
+    // usedRooms per room type from the allotment results
+    const usedByType = {};
+    if (resultsResp && resultsResp.ok) {
+      const results = await resultsResp.json();
+      (results.roomTypes || []).forEach((t) => {
+        usedByType[t.roomType] = t.usedRooms;
+      });
+    }
+
+    // Config summary (configured count + total capacity)
+    const configuredCount = rooms.filter((r) => (r.capacity || 0) > 0 && (r.totalRooms || 0) > 0).length;
+    const totalCapacity = rooms.reduce((sum, r) => sum + (r.capacity || 0) * (r.totalRooms || 0), 0);
+    const statusEl = document.getElementById("room-config-status");
+    if (statusEl) {
+      statusEl.textContent = rooms.length === 0
+        ? "No room types configured yet"
+        : `${configuredCount} of ${rooms.length} room types configured`;
+    }
+    const capEl = document.getElementById("room-total-capacity");
+    if (capEl) capEl.textContent = `Total capacity: ${totalCapacity} seats`;
+    const readyEl = document.getElementById("room-setup-ready");
+    if (readyEl) readyEl.style.display = rooms.length > 0 && configuredCount === rooms.length ? "inline-block" : "none";
+    const hintEl = document.getElementById("room-setup-hint");
+    if (hintEl) {
+      hintEl.innerHTML = rooms.length > 0 && configuredCount === rooms.length
+        ? "✔ All room types configured — you can now run <strong>Lock and Allot</strong>."
+        : "⚠️ The warden <strong>must</strong> enter the students-per-room and total rooms for every room type before clicking <strong>Lock and Allot</strong>.";
+    }
+
+    // Admin room-type table with editable students-per-room and total rooms
+    const roomList = document.getElementById("room-type-list");
+    if (roomList) {
+      roomList.innerHTML = "";
+      if (rooms.length === 0) {
+        roomList.innerHTML = '<tr><td colspan="7" class="no-data" style="text-align: center; padding: 24px; color: #64748b;">No room types added yet. Use the form below to add one.</td></tr>';
+      } else {
+        rooms.forEach((room) => {
+          const usedRooms = usedByType[room.roomType] != null ? usedByType[room.roomType] : 0;
+          const capacity = room.capacity || "";
+          const totalRooms = room.totalRooms || 0;
+          const totalCap = capacity && totalRooms ? capacity * totalRooms : "—";
+          const configured = capacity > 0 && totalRooms > 0;
+          const tr = document.createElement("tr");
+          tr.innerHTML = `
+            <td><strong>${room.roomType}</strong></td>
+            <td><input type="number" class="room-edit-input" id="cap-${room.roomId}" min="1" value="${capacity}" placeholder="—" /></td>
+            <td><input type="number" class="room-edit-input" id="total-${room.roomId}" min="1" value="${totalRooms}" /></td>
+            <td>${totalCap}</td>
+            <td>${usedRooms}</td>
+            <td>${configured ? '<span class="badge complete">Configured</span>' : '<span class="badge incomplete">Needs rooms</span>'}</td>
+            <td style="text-align: right; white-space: nowrap;">
+              <button class="btn primary small" onclick="updateRoomConfig(${room.roomId}, '${room.roomType}')">Save</button>
+              <button class="btn secondary small remove" onclick="removeRoom(${room.roomId}, '${room.roomType}')">Remove</button>
+            </td>
+          `;
+          roomList.appendChild(tr);
+        });
+      }
+    }
+
+    // Room-type dropdowns for the student form (3 preference selects)
+    let roomHTML = "";
+    rooms.forEach((room) => {
+      roomHTML += `<option value="${room.roomType}">${room.roomType} (${room.capacity || 3} students)</option>`;
+    });
+    const pref1 = document.querySelector(".js-room-pref1");
+    if (pref1) pref1.innerHTML = roomHTML || '<option value="">No room types available</option>';
+    const pref2 = document.querySelector(".js-room-pref2");
+    if (pref2) pref2.innerHTML = '<option value="">-- None --</option>' + roomHTML;
+    const pref3 = document.querySelector(".js-room-pref3");
+    if (pref3) pref3.innerHTML = '<option value="">-- None --</option>' + roomHTML;
+  } catch (error) {
+    console.error("Error loading rooms:", error);
+  }
+}
+
+async function updateRoomConfig(id, roomType) {
+  const capInput = document.getElementById(`cap-${id}`);
+  const totalInput = document.getElementById(`total-${id}`);
+  const capacity = capInput ? parseInt(capInput.value) : 0;
+  const totalRooms = totalInput ? parseInt(totalInput.value) : 0;
+  if (!capacity || capacity < 1) {
+    showToast("Students per room must be at least 1.", "warning");
+    return;
+  }
+  if (!totalRooms || totalRooms < 1) {
+    showToast("Total rooms must be at least 1.", "warning");
+    return;
+  }
+  try {
+    const response = await fetch(`/update-room/${id}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ capacity: capacity, totalRooms: totalRooms }),
+    });
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      throw new Error(err.message || "Failed to update room type");
+    }
+    showToast(`${roomType} updated: ${capacity} students/room, ${totalRooms} rooms.`, "success");
+    showRooms();
+  } catch (error) {
+    console.error("Error updating room type:", error);
+    showToast("Failed to update room type: " + error.message, "error");
+  }
+}
+
+async function removeRoom(id, roomType) {
+  const ok = await showConfirmDialog({
+    title: "Remove Room Type",
+    message: `<p>Remove <strong>${roomType}</strong>? This deletes the room type configuration.</p><p class="confirm-note">Existing allotments referencing it are not deleted.</p>`,
+    confirmLabel: "Remove",
+    cancelLabel: "Cancel",
+    danger: true,
+    icon: "🗑",
+  });
+  if (!ok) return;
+  try {
+    const response = await fetch(`/remove-room/${id}`, { method: "DELETE" });
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      throw new Error(err.message || "Failed to delete room type");
+    }
+    showRooms();
+    showToast(`Room type "${roomType}" removed.`, "success");
+  } catch (error) {
+    console.error("Error removing room:", error);
+    showToast("Failed to remove room type: " + error.message, "error");
+  }
+}
+
+function sendRoomAndHostel() {
+  const addButton = document.querySelector(".js-add-button");
+  if (!addButton) return;
+  addButton.addEventListener("click", async (event) => {
+    event.preventDefault();
+    const name = document.querySelector(".js-getHostel").value;
+    const capacityInput = document.querySelector(".js-getRoomCapacity");
+    const totalRoomsInput = document.querySelector(".js-getRoomTotalRooms");
+    const capacity = capacityInput ? parseInt(capacityInput.value) : 3;
+    const totalRooms = totalRoomsInput ? parseInt(totalRoomsInput.value) : 0;
+    if (!name) {
+      showToast("Please fill in the room type name.", "warning");
+      return;
+    }
+    if (!totalRooms || totalRooms < 1) {
+      showToast("Please enter the total number of rooms available for this type.", "warning");
+      return;
+    }
+    try {
+      const response = await fetch("/room-details", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, capacity, totalRooms }),
+      });
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({}));
+        throw new Error(err.message || "Failed to add room type");
+      }
+      document.querySelector(".js-getHostel").value = "";
+      if (capacityInput) capacityInput.value = "3";
+      if (totalRoomsInput) totalRoomsInput.value = "0";
+      showRooms();
+      showToast(`Room type "${name}" added.`, "success");
+    } catch (error) {
+      console.error("Error adding room type:", error);
+      showToast("Failed to add room type: " + error.message, "error");
+    }
+  });
+}
+
+/* ------------------------------------------------------------------ */
+/* Admin: Lock & Allot                                                 */
+/* ------------------------------------------------------------------ */
+
+async function loadRoomConfig() {
+  try {
+    const [roomsResp, resultsResp] = await Promise.all([
+      fetch("/get-rooms"),
+      fetch("/api/admin/allotment-results"),
+    ]);
+    const rooms = await roomsResp.json();
+    const results = await resultsResp.json();
+
+    const tableBody = document.getElementById("lock-config-table-body");
+    if (tableBody) {
+      tableBody.innerHTML = "";
+      let allConfigured = rooms.length > 0;
+      rooms.forEach((room) => {
+        const tr = document.createElement("tr");
+        const totalCapacity = (room.totalRooms || 0) * (room.capacity || 0);
+        if (!room.totalRooms || room.totalRooms < 1) allConfigured = false;
+        tr.innerHTML = `
+          <td><strong>${room.roomType}</strong></td>
+          <td>${room.capacity || "-"}</td>
+          <td>${room.totalRooms || 0} ${!room.totalRooms || room.totalRooms < 1 ? '<span class="badge incomplete">required</span>' : ""}</td>
+          <td>${totalCapacity}</td>
+        `;
+        tableBody.appendChild(tr);
+      });
+      if (rooms.length === 0) {
+        tableBody.innerHTML = '<tr><td colspan="4" style="text-align: center; color: #64748b;">No room types configured yet. Add them under Room Types.</td></tr>';
+      }
+    }
+
+    const submittedCount = document.getElementById("submitted-students-count");
+    if (submittedCount) {
+      submittedCount.textContent = (results.allottedCount || 0) + (results.unallottedCount || 0);
+    }
+
+    const locked = !!results.locked;
+    const lockBtn = document.getElementById("lock-allot-btn");
+    const resetBtn = document.getElementById("reset-allotment-btn");
+    const banner = document.getElementById("allotment-locked-banner");
+    const hint = document.getElementById("lock-allot-hint");
+
+    if (lockBtn) {
+      lockBtn.disabled = locked || !allConfigured;
+      lockBtn.textContent = locked ? "Allotment Completed" : "🔒 Lock and Allot";
+      if (!locked && !allConfigured) {
+        lockBtn.title = "Enter total rooms for all room types first";
+      }
+    }
+    if (resetBtn) resetBtn.style.display = locked ? "inline-block" : "none";
+    if (banner) banner.style.display = locked ? "block" : "none";
+    if (hint) hint.style.display = locked ? "none" : "block";
+
+    if (locked) {
+      document.getElementById("allotment-results").style.display = "block";
+      renderResults(results);
+    }
+  } catch (error) {
+    console.error("Error loading room config:", error);
+  }
+}
+
+async function lockAndAllot() {
+  // Build a live summary of what the allotment will do.
+  let summaryHtml = `
+    <p>This will <strong>finalize the allotment for every student</strong> and
+    <strong>lock all preference changes</strong>. Students are prioritized by
+    preference update time and placed into their 1st, then 2nd, then 3rd choice
+    room types.</p>
+    <p class="confirm-note">Students who fit into no room type are reported as
+    unallotted in the results and the final PDF — no allotment entry is created
+    for them.</p>
+  `;
+  try {
+    const [roomsResp, resultsResp] = await Promise.all([
+      fetch("/get-rooms"),
+      fetch("/api/admin/allotment-results"),
+    ]);
+    const rooms = await roomsResp.json();
+    const results = await resultsResp.json();
+    const totalSeats = rooms.reduce((s, r) => s + (r.capacity || 0) * (r.totalRooms || 0), 0);
+    const submitted = (results.allottedCount || 0) + (results.unallottedCount || 0);
+    const expectedUnallotted = Math.max(0, submitted - totalSeats);
+    summaryHtml = `
+      <p>This will <strong>finalize the allotment for every student</strong> and
+      <strong>lock all preference changes</strong>.</p>
+      <table class="confirm-summary-table">
+        <tr><td>Students with preferences</td><td><strong>${submitted}</strong></td></tr>
+        <tr><td>Total room capacity</td><td><strong>${totalSeats}</strong> seats</td></tr>
+        <tr><td>Expected unallotted</td><td><strong>${expectedUnallotted}</strong></td></tr>
+      </table>
+      <p class="confirm-note">Priority is by preference update time; room types
+      fill by 1st → 2nd → 3rd choice. Unallotted students appear in the results
+      and final PDF without an allotment entry.</p>
+    `;
+  } catch (e) {
+    console.warn("Could not build allotment summary, using default:", e);
+  }
+
+  const ok = await showConfirmDialog({
+    title: "Lock and Allot",
+    message: summaryHtml,
+    confirmLabel: "Lock & Allot",
+    cancelLabel: "Cancel",
+    icon: "🔒",
+  });
+  if (!ok) return;
+
+  const lockBtn = document.getElementById("lock-allot-btn");
+  if (lockBtn) {
+    lockBtn.textContent = "Allotting...";
+    lockBtn.disabled = true;
+  }
+
+  try {
+    const response = await fetch("/api/admin/lock-and-allot", { method: "POST" });
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.message || "Lock and allot failed");
+    }
+    document.getElementById("allotment-results").style.display = "block";
+    renderResults(data);
+    await loadRoomConfig();
+    showToast(
+      `Allotment completed: ${data.allottedCount} students allotted, ${data.unallottedCount} unallotted. Preferences are now locked.`,
+      "success",
+      6000
+    );
+  } catch (error) {
+    console.error("Error during lock and allot:", error);
+    showToast("Lock and Allot failed: " + error.message, "error", 6000);
+  } finally {
+    if (lockBtn) {
+      lockBtn.textContent = "🔒 Lock and Allot";
+      lockBtn.disabled = false;
+    }
+  }
+}
+
+async function resetAllotment() {
+  const ok = await showConfirmDialog({
+    title: "Reset Allotment",
+    message:
+      "<p>This deletes <strong>all groups and allotments</strong> and unlocks every student's preferences.</p><p class=\"confirm-note\">The allotment results will be cleared and the warden can run Lock &amp; Allot again.</p>",
+    confirmLabel: "Reset Allotment",
+    cancelLabel: "Cancel",
+    danger: true,
+    icon: "↺",
+  });
+  if (!ok) return;
+
+  try {
+    const response = await fetch("/api/admin/reset-allotment", { method: "POST" });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.message || "Reset failed");
+    document.getElementById("allotment-results").style.display = "none";
+    await loadRoomConfig();
+    showToast("Allotment reset. Preferences are unlocked.", "success");
+  } catch (error) {
+    console.error("Error resetting allotment:", error);
+    showToast("Reset failed: " + error.message, "error");
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/* Admin: results (room-type-wise rooms + unallotted students)         */
+/* ------------------------------------------------------------------ */
+
+async function loadAllotmentResults() {
+  try {
+    const response = await fetch("/api/admin/allotment-results");
+    if (!response.ok) throw new Error("Failed to fetch allotment results");
+    const data = await response.json();
+    renderRoomsByType(data);
+    renderUnallottedBlock(data);
+  } catch (error) {
+    console.error("Error loading allotment results:", error);
+  }
+}
+
+function renderRoomsByType(data) {
+  const container = document.getElementById("rooms-allotted-by-type");
+  if (!container) return;
+  container.innerHTML = "";
+
+  const hasRooms = (data.roomTypes || []).some((t) => t.rooms.length > 0);
+  if (!hasRooms) {
+    container.innerHTML = '<p style="text-align: center; color: #64748b;">No rooms allotted yet.</p>';
+    return;
+  }
+
+  (data.roomTypes || []).forEach((type) => {
+    if (type.rooms.length === 0) return;
+    const block = document.createElement("div");
+    block.className = "room-type-results-block";
+    block.innerHTML = `
+      <div class="room-type-results-header">
+        <strong>${type.roomType}</strong>
+        <span class="badge complete">${type.usedRooms} / ${type.totalRooms || 0} rooms used</span>
+      </div>
+    `;
+    const table = document.createElement("table");
+    table.className = "modern-table";
+    table.innerHTML = `
+      <thead>
+        <tr>
+          <th>Room #</th>
+          <th>Students</th>
+        </tr>
+      </thead>
+    `;
+    const tbody = document.createElement("tbody");
+    type.rooms.forEach((room) => {
+      const names = (room.students || []).map((s) => `${s.name} (${s.department || "-"})`).join(", ");
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td><strong>Room #${room.groupId}</strong></td>
+        <td>${names || "-"}</td>
+      `;
+      tbody.appendChild(tr);
+    });
+    table.appendChild(tbody);
+    block.appendChild(table);
+    container.appendChild(block);
+  });
+}
+
+function renderUnallottedBlock(data) {
+  // Unallotted list in the overview card
+  const unallottedList = document.getElementById("unallotted-students-details-list");
+  if (unallottedList) {
+    unallottedList.innerHTML = "";
+    if (data.unallotted.length === 0) {
+      unallottedList.innerHTML = '<tr><td colspan="3" style="text-align: center; color: #64748b;">No unallotted students.</td></tr>';
+    } else {
+      data.unallotted.forEach((student) => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${student.studentId}</td>
+          <td><strong>${student.name}</strong></td>
+          <td><span class="badge incomplete">${student.department || "-"} ${student.year || ""}</span></td>
+        `;
+        unallottedList.appendChild(tr);
+      });
+    }
+  }
+  const count = document.getElementById("unallotted-students-count");
+  if (count) count.textContent = data.unallottedCount || 0;
+}
+
+function renderResults(data) {
+  const container = document.getElementById("results-container");
+  if (!container) return;
+  container.innerHTML = "";
+
+  // Rooms allotted room-type-wise
+  (data.roomTypes || []).forEach((type) => {
+    if (type.rooms.length === 0) return;
+    const block = document.createElement("div");
+    block.className = "room-type-results-block";
+    block.innerHTML = `
+      <div class="room-type-results-header">
+        <strong>${type.roomType}</strong>
+        <span class="badge complete">${type.usedRooms} / ${type.totalRooms || 0} rooms used</span>
+      </div>
+    `;
+    const table = document.createElement("table");
+    table.className = "modern-table";
+    table.innerHTML = `
+      <thead>
+        <tr>
+          <th>Room #</th>
+          <th>Students</th>
+        </tr>
+      </thead>
+    `;
+    const tbody = document.createElement("tbody");
+    type.rooms.forEach((room) => {
+      const names = (room.students || []).map((s) => `${s.name} (${s.department || "-"})`).join(", ");
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td><strong>Room #${room.groupId}</strong></td>
+        <td>${names || "-"}</td>
+      `;
+      tbody.appendChild(tr);
+    });
+    table.appendChild(tbody);
+    block.appendChild(table);
+    container.appendChild(block);
+  });
+
+  // Allotted students (flat list)
+  const allottedBlock = document.createElement("div");
+  allottedBlock.className = "room-type-results-block allotted-students-block";
+  allottedBlock.innerHTML = `
+    <div class="room-type-results-header">
+      <strong>👥 Allotted Students</strong>
+      <span class="badge complete">${data.allottedCount || 0} students</span>
+    </div>
+  `;
+  const aTable = document.createElement("table");
+  aTable.className = "modern-table";
+  aTable.innerHTML = `
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Name</th>
+        <th>Department &amp; Year</th>
+        <th>Room</th>
+      </tr>
+    </thead>
+  `;
+  const aTbody = document.createElement("tbody");
+  (data.roomTypes || []).forEach((type) => {
+    type.rooms.forEach((room) => {
+      (room.students || []).forEach((s) => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${s.studentId}</td>
+          <td><strong>${s.name}</strong></td>
+          <td>${s.department || "-"} (${s.year || "-"})</td>
+          <td>${type.roomType} - Room #${room.groupId}</td>
+        `;
+        aTbody.appendChild(tr);
+      });
+    });
+  });
+  if (aTbody.children.length === 0) {
+    aTbody.innerHTML = '<tr><td colspan="4" style="text-align: center; color: #64748b;">No allotted students.</td></tr>';
+  }
+  aTable.appendChild(aTbody);
+  allottedBlock.appendChild(aTable);
+  container.appendChild(allottedBlock);
+
+  // Unallotted students
+  const unallottedBlock = document.createElement("div");
+  unallottedBlock.className = "room-type-results-block unallotted-block";
+  unallottedBlock.innerHTML = `
+    <div class="room-type-results-header">
+      <strong>⚠️ Unallotted Students</strong>
+      <span class="badge incomplete">${data.unallottedCount || 0} students</span>
+    </div>
+  `;
+  const uTable = document.createElement("table");
+  uTable.className = "modern-table";
+  uTable.innerHTML = `
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Name</th>
+        <th>Department &amp; Year</th>
+        <th>Preferences</th>
+      </tr>
+    </thead>
+  `;
+  const uTbody = document.createElement("tbody");
+  if ((data.unallotted || []).length === 0) {
+    uTbody.innerHTML = '<tr><td colspan="4" style="text-align: center; color: #64748b;">No unallotted students.</td></tr>';
+  } else {
+    data.unallotted.forEach((s) => {
+      const prefs = (s.preferences || []).filter(Boolean).join(" → ") || "-";
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td>${s.studentId}</td>
+        <td><strong>${s.name}</strong></td>
+        <td>${s.department || "-"} (${s.year || "-"})</td>
+        <td>${prefs}</td>
+      `;
+      uTbody.appendChild(tr);
+    });
+  }
+  uTable.appendChild(uTbody);
+  unallottedBlock.appendChild(uTable);
+  container.appendChild(unallottedBlock);
+}
+
+/* ------------------------------------------------------------------ */
+/* Admin: stats + track preferences                                    */
+/* ------------------------------------------------------------------ */
+
+async function loadAllotmentStats() {
+  const allottedCount = document.getElementById("allotted-students-count");
+  const allottedList = document.getElementById("allotted-students-details-list");
+  const unallottedList = document.getElementById("unallotted-students-details-list");
+
+  try {
+    const response = await fetch("/api/admin/allotment-stats");
+    if (!response.ok) throw new Error("Failed to fetch statistics");
+    const data = await response.json();
+
+    if (allottedCount) allottedCount.textContent = data.allottedCount;
+    const unallottedCount = document.getElementById("unallotted-students-count");
+    if (unallottedCount) unallottedCount.textContent = data.unallottedCount;
+
+    if (allottedList) {
+      allottedList.innerHTML = "";
+      if (data.allottedStudents.length === 0) {
+        allottedList.innerHTML = '<tr><td colspan="3" style="text-align: center; color: #64748b;">No allotted students found.</td></tr>';
+      } else {
+        data.allottedStudents.forEach((student) => {
+          const tr = document.createElement("tr");
+          tr.innerHTML = `
+            <td>${student.studentId}</td>
+            <td><strong>${student.name}</strong></td>
+            <td><span class="badge complete">${student.roomDetails}</span></td>
+          `;
+          allottedList.appendChild(tr);
+        });
+      }
+    }
+
+    if (unallottedList) {
+      unallottedList.innerHTML = "";
+      if (data.unallottedStudents.length === 0) {
+        unallottedList.innerHTML = '<tr><td colspan="3" style="text-align: center; color: #64748b;">No unallotted students found.</td></tr>';
+      } else {
+        data.unallottedStudents.forEach((student) => {
+          const tr = document.createElement("tr");
+          tr.innerHTML = `
+            <td>${student.studentId}</td>
+            <td><strong>${student.name}</strong></td>
+            <td><span class="badge incomplete">${student.category}</span></td>
+          `;
+          unallottedList.appendChild(tr);
+        });
+      }
+    }
+  } catch (error) {
+    console.error("Error loading allotment statistics:", error);
+  }
+}
+
+let allRegisteredStudents = [];
+
+async function loadTrackPreferences() {
+  const tableBody = document.getElementById("track-students-table-body");
+  if (!tableBody) return;
+  tableBody.innerHTML = '<tr><td colspan="6" class="loading" style="text-align: center; padding: 20px;">Loading students...</td></tr>';
+  try {
+    const response = await fetch("/api/admin/students");
+    if (!response.ok) throw new Error("Failed to fetch students");
+    allRegisteredStudents = await response.json();
+
+    tableBody.innerHTML = "";
+    if (allRegisteredStudents.length === 0) {
+      tableBody.innerHTML = '<tr><td colspan="6" class="no-data" style="text-align: center; padding: 20px;">No students have filled preferences yet.</td></tr>';
+      return;
+    }
+
+    allRegisteredStudents.forEach((student, index) => {
+      const row = document.createElement("tr");
+      const updated = formatDateTime(student.updatedAt);
+      row.innerHTML = `
+        <td><strong>${student.name}</strong></td>
+        <td>${student.department || "-"} (${student.year || "-"})</td>
+        <td><span class="badge ${student.location === "chennai" ? "info" : "warning"}" style="text-transform: capitalize; padding: 4px 10px; border-radius: 99px;">${student.location || "-"}</span></td>
+        <td>${updated}</td>
+        <td><button class="btn secondary small" onclick="viewStudentPreferences(${index})">View Details</button></td>
+        <td>${student.email || student.phone || "-"}</td>
+      `;
+      tableBody.appendChild(row);
+    });
+  } catch (error) {
+    console.error("Error loading track preferences:", error);
+    tableBody.innerHTML = '<tr><td colspan="6" class="error-message" style="text-align: center; color: red; padding: 20px;">Failed to load students.</td></tr>';
+  }
+}
+
+function filterTrackStudents() {
+  const query = document.getElementById("search-students-input").value.toLowerCase();
+  const rows = document.querySelectorAll("#track-students-table-body tr");
+  rows.forEach((row) => {
+    row.style.display = row.textContent.toLowerCase().includes(query) ? "" : "none";
+  });
+}
+
+function viewStudentPreferences(index) {
+  const student = allRegisteredStudents[index];
+  if (!student) return;
+
+  const content = `
+    <div class="preference-details" style="padding: 10px;">
+      <h3 style="margin-bottom: 20px; font-family: 'Poppins', sans-serif; font-weight: 700; color: var(--text-color); border-bottom: 1px solid var(--border-color); padding-bottom: 10px;">${student.name}'s Preference Details</h3>
+      <div class="table-container" style="max-height: 400px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 8px;">
+        <table class="modern-table" style="width: 100%;">
+          <tbody>
+            <tr><td style="width: 40%; font-weight: 600;">Email</td><td>${student.email || "-"}</td></tr>
+            <tr><td style="font-weight: 600;">Phone</td><td>${student.phone || "-"}</td></tr>
+            <tr><td style="font-weight: 600;">Department & Year</td><td>${student.department || "-"} (${student.year || "-"})</td></tr>
+            <tr><td style="font-weight: 600;">Location</td><td>${student.location || "-"}</td></tr>
+            <tr><td style="font-weight: 600;">Sleep / Wake Time</td><td>${student.sleepTime || "-"} / ${student.wakeTime || "-"}</td></tr>
+            <tr><td style="font-weight: 600;">Preferred Noise Level</td><td>${student.noiseLevel || "-"}</td></tr>
+            <tr><td style="font-weight: 600;">Light Sensitivity</td><td>${student.lightSensitivity || "-"}</td></tr>
+            <tr><td style="font-weight: 600;">Study Habit & Time</td><td>${student.studyHabits || "-"} (${student.studyTime || "-"})</td></tr>
+            <tr><td style="font-weight: 600;">Cleanliness Level</td><td>${student.cleanliness || "-"}</td></tr>
+            <tr><td style="font-weight: 600;">Room Type Preferences</td><td>${[student.roomTypePref1, student.roomTypePref2, student.roomTypePref3].filter(Boolean).join(" → ") || "-"}</td></tr>
+            <tr><td style="font-weight: 600;">Preferred Roommates</td><td>${student.preferredRoommates || "-"}</td></tr>
+            <tr><td style="font-weight: 600;">Created At</td><td>${formatDateTime(student.createdAt)}</td></tr>
+            <tr><td style="font-weight: 600;">Last Updated</td><td>${formatDateTime(student.updatedAt)}</td></tr>
+            <tr><td style="font-weight: 600;">Emergency Contact</td><td>${student.emergencyContact || "-"}</td></tr>
+            <tr><td style="font-weight: 600;">Home Address</td><td>${student.address || "-"}</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  `;
+
+  const template = document.getElementById("modal-template");
+  if (!template) return;
+  const clone = template.content.cloneNode(true);
+  const modal = clone.querySelector(".modal");
+  const modalBody = clone.querySelector(".modal-body");
+  modalBody.innerHTML = content;
+  document.body.appendChild(modal);
+  modal.querySelector(".modal-close").addEventListener("click", () => modal.remove());
+}
+
+/* ------------------------------------------------------------------ */
+/* Student: profile + allotment status                                 */
+/* ------------------------------------------------------------------ */
+
+function formatDateTime(value) {
+  if (!value) return "-";
+  try {
+    const d = new Date(value);
+    if (isNaN(d.getTime())) return value;
+    return d.toLocaleString();
+  } catch (e) {
+    return value;
+  }
+}
+
+function setStudentFormLocked(locked) {
+  const banner = document.getElementById("preferences-locked-banner");
+  if (banner) banner.style.display = locked ? "block" : "none";
+
+  const form = document.getElementById("student-pref-form");
+  if (form) {
+    const inputs = form.querySelectorAll("input, select, textarea, button[type='submit']");
+    inputs.forEach((el) => {
+      el.disabled = locked;
+    });
+  }
+  const formLink = document.getElementById("link-student-form");
+  if (formLink) {
+    formLink.style.pointerEvents = locked ? "none" : "auto";
+    formLink.style.opacity = locked ? "0.4" : "1";
+    formLink.title = locked ? "Preferences are locked after room allotment." : "";
+  }
+  const profileBtn = document.querySelector(".js-profile-action-btn");
+  if (profileBtn) {
+    if (locked) {
+      profileBtn.textContent = "Preferences Locked";
+      profileBtn.disabled = true;
+      profileBtn.removeAttribute("onclick");
+      profileBtn.style.opacity = "0.6";
+      profileBtn.style.cursor = "not-allowed";
+    } else {
+      profileBtn.textContent = "Edit Profile";
+      profileBtn.disabled = false;
+      profileBtn.setAttribute("onclick", "document.getElementById('link-student-form').click()");
+      profileBtn.style.opacity = "1";
+      profileBtn.style.cursor = "pointer";
+    }
+  }
 }
 
 async function loadStudentAllotment() {
@@ -482,7 +1072,6 @@ async function loadStudentAllotment() {
   const container = document.getElementById("allotment-details-container");
   const roomInfo = document.getElementById("allotted-room-info");
   const roommatesList = document.getElementById("allotted-roommates-list");
-
   if (!badge) return;
 
   try {
@@ -494,25 +1083,10 @@ async function loadStudentAllotment() {
       badge.classList.remove("incomplete");
       badge.classList.add("complete");
       badge.textContent = "Allotted";
-
-      const profileBtn = document.querySelector(".js-profile-action-btn");
-      if (profileBtn) {
-        profileBtn.textContent = "Preferences Locked";
-        profileBtn.disabled = true;
-        profileBtn.removeAttribute("onclick");
-        profileBtn.style.opacity = "0.6";
-        profileBtn.style.cursor = "not-allowed";
-      }
-
-      const formLink = document.getElementById("link-student-form");
-      if (formLink) {
-        formLink.style.pointerEvents = "none";
-        formLink.style.opacity = "0.4";
-        formLink.title = "Preferences are locked after room allotment.";
-      }
+      setStudentFormLocked(true);
 
       if (roomInfo) {
-        roomInfo.textContent = `${data.roomType} (Room ID: ${data.roomId})`;
+        roomInfo.textContent = `${data.roomType} (Room #${data.groupId})`;
       }
 
       if (roommatesList) {
@@ -533,28 +1107,12 @@ async function loadStudentAllotment() {
           roommatesList.innerHTML = '<li style="color: #64748b; font-size: 0.9rem; padding: 4px 0;">No roommates assigned yet.</li>';
         }
       }
-
       if (container) container.style.display = "block";
     } else {
       badge.classList.remove("complete");
       badge.classList.add("incomplete");
-      badge.textContent = "Not Allotted";
-
-      const profileBtn = document.querySelector(".js-profile-action-btn");
-      if (profileBtn) {
-        profileBtn.textContent = "Edit Profile";
-        profileBtn.disabled = false;
-        profileBtn.setAttribute("onclick", "document.getElementById('link-student-form').click()");
-        profileBtn.style.opacity = "1";
-        profileBtn.style.cursor = "pointer";
-      }
-
-      const formLink = document.getElementById("link-student-form");
-      if (formLink) {
-        formLink.style.pointerEvents = "auto";
-        formLink.style.opacity = "1";
-        formLink.removeAttribute("title");
-      }
+      badge.textContent = data.locked ? "Not Allotted" : "Not Allotted";
+      setStudentFormLocked(!!data.locked);
 
       if (container) container.style.display = "none";
     }
@@ -565,114 +1123,13 @@ async function loadStudentAllotment() {
   }
 }
 
-let allRegisteredStudents = [];
-
-async function loadTrackPreferences() {
-  const tableBody = document.getElementById("track-students-table-body");
-  if (!tableBody) return;
-  tableBody.innerHTML = '<tr><td colspan="6" class="loading" style="text-align: center; padding: 20px;">Loading students...</td></tr>';
-  try {
-    const response = await fetch("/api/admin/students");
-    if (!response.ok) throw new Error("Failed to fetch students");
-    allRegisteredStudents = await response.json();
-    
-    tableBody.innerHTML = "";
-    if (allRegisteredStudents.length === 0) {
-      tableBody.innerHTML = '<tr><td colspan="6" class="no-data" style="text-align: center; padding: 20px;">No students have filled preferences yet.</td></tr>';
-      return;
-    }
-    
-    allRegisteredStudents.forEach((student, index) => {
-      const row = document.createElement("tr");
-      row.innerHTML = `
-        <td><strong>${student.name}</strong></td>
-        <td>${student.clg === "snu" || student.clg === "Shiv Nadar University" ? "Shiv Nadar University" : "SSN College"}</td>
-        <td>${student.department || "-"} (${student.studentYear || "-"})</td>
-        <td><span class="badge ${student.location === "chennai" ? "info" : "warning"}" style="text-transform: capitalize; padding: 4px 10px; border-radius: 99px;">${student.location || "-"}</span></td>
-        <td><button class="btn secondary small" onclick="viewStudentPreferences(${index})">View Details</button></td>
-        <td>${student.email || student.phone || "-"}</td>
-      `;
-      tableBody.appendChild(row);
-    });
-  } catch (error) {
-    console.error("Error loading track preferences:", error);
-    tableBody.innerHTML = '<tr><td colspan="6" class="error-message" style="text-align: center; color: red; padding: 20px;">Failed to load students.</td></tr>';
-  }
-}
-
-function filterTrackStudents() {
-  const query = document.getElementById("search-students-input").value.toLowerCase();
-  const rows = document.querySelectorAll("#track-students-table-body tr");
-  rows.forEach((row) => {
-    const text = row.textContent.toLowerCase();
-    row.style.display = text.includes(query) ? "" : "none";
-  });
-}
-
-function viewStudentPreferences(index) {
-  const student = allRegisteredStudents[index];
-  if (!student) return;
-
-  const content = `
-    <div class="preference-details" style="padding: 10px;">
-      <h3 style="margin-bottom: 20px; font-family: 'Poppins', sans-serif; font-weight: 700; color: var(--text-color); border-bottom: 1px solid var(--border-color); padding-bottom: 10px;">${student.name}'s Preference Details</h3>
-      <div class="table-container" style="max-height: 400px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 8px;">
-        <table class="modern-table" style="width: 100%;">
-          <tbody>
-            <tr><td style="width: 40%; font-weight: 600;">Email</td><td>${student.email || "-"}</td></tr>
-            <tr><td style="font-weight: 600;">Phone</td><td>${student.phone || "-"}</td></tr>
-            <tr><td style="font-weight: 600;">College</td><td>${student.clg === "snu" || student.clg === "Shiv Nadar University" ? "Shiv Nadar University" : "SSN College"}</td></tr>
-            <tr><td style="font-weight: 600;">Department & Year</td><td>${student.department || "-"} (${student.studentYear || "-"})</td></tr>
-            <tr><td style="font-weight: 600;">Location</td><td>${student.location || "-"}</td></tr>
-            <tr><td style="font-weight: 600;">Sleep / Wake Time</td><td>${student.sleepTime || "-"} / ${student.wakeTime || "-"}</td></tr>
-            <tr><td style="font-weight: 600;">Preferred Noise Level</td><td>${student.noiseLevel || "-"}</td></tr>
-            <tr><td style="font-weight: 600;">Light Sensitivity</td><td>${student.lightSensitivity || "-"}</td></tr>
-            <tr><td style="font-weight: 600;">Study Habit & Time</td><td>${student.studyHabits || "-"} (${student.studyTime || "-"})</td></tr>
-            <tr><td style="font-weight: 600;">Cleanliness Level</td><td>${student.cleanliness || "-"}</td></tr>
-            <tr><td style="font-weight: 600;">Preferred Room Type</td><td>${student.roomType || "-"}</td></tr>
-            <tr><td style="font-weight: 600;">Preferred Roommates</td><td>${student.preferredRoommates || "-"}</td></tr>
-            <tr><td style="font-weight: 600;">Emergency Contact</td><td>${student.emergencyContact || "-"}</td></tr>
-            <tr><td style="font-weight: 600;">Home Address</td><td>${student.address || "-"}</td></tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-  `;
-
-  // Create and show modal
-  const template = document.getElementById("modal-template");
-  if (!template) return;
-  const clone = template.content.cloneNode(true);
-  const modal = clone.querySelector(".modal");
-  const modalBody = clone.querySelector(".modal-body");
-  modalBody.innerHTML = content;
-
-  // Append modal to body
-  document.body.appendChild(modal);
-
-  // Bind close buttons
-  const closeBtn = modal.querySelector(".modal-close");
-  closeBtn.addEventListener("click", () => {
-    modal.remove();
-  });
-}
-
 async function loadStudentProfile() {
   try {
-    // Make sure options are populated before setting values
     await showRooms();
-    await getDepartmentFromCategories();
-
-    const response = await fetch("/api/student/profile", {
-      method: "GET",
-      credentials: "include",
-    });
-
+    const response = await fetch("/api/student/profile", { method: "GET", credentials: "include" });
     if (response.ok) {
       const data = await response.json();
-      console.log("Loaded student profile:", data);
 
-      // Update dashboard status badge
       const badge = document.querySelector("#student-overview .status-row .badge");
       if (badge) {
         badge.classList.remove("incomplete");
@@ -680,583 +1137,130 @@ async function loadStudentProfile() {
         badge.textContent = "Complete";
       }
 
-      // Update button text to "Edit Profile"
-      const profileBtn = document.querySelector(".js-profile-action-btn");
-      if (profileBtn) {
-        profileBtn.textContent = "Edit Profile";
+      const updatedTime = document.getElementById("profile-updated-time");
+      if (updatedTime) updatedTime.textContent = formatDateTime(data.updatedAt);
+
+      const lastUpdated = document.getElementById("form-last-updated");
+      if (lastUpdated) {
+        lastUpdated.textContent = `Created: ${formatDateTime(data.createdAt)} · Last updated: ${formatDateTime(data.updatedAt)}`;
       }
 
-      // Pre-fill form fields
-      const nameInput = document.querySelector(".js-name");
-      if (nameInput) nameInput.value = data.name || "";
-
-      const clgInput = document.querySelector(".js-clg");
-      if (clgInput) {
-        clgInput.value = data.clg === "Shiv Nadar University" ? "snu" : "ssn";
-      }
-      
-      const sleepInput = document.querySelector(".js-sleep");
-      if (sleepInput) sleepInput.value = data.sleepTime || "";
-      
-      const wakeInput = document.querySelector(".js-wake");
-      if (wakeInput) wakeInput.value = data.wakeTime || "";
-      
-      const departmentInput = document.querySelector(".js-department");
-      if (departmentInput) departmentInput.value = data.department || "";
-      
-      const yearInput = document.querySelector(".js-year");
-      if (yearInput) yearInput.value = data.year || "";
-      
-      const phoneInput = document.querySelector(".js-phone");
-      if (phoneInput) phoneInput.value = data.phone || "";
-      
-      const studentIdInput = document.querySelector(".js-studentId");
-      if (studentIdInput) studentIdInput.value = data.studentId || "";
-      
-      const studyTimeInput = document.querySelector(".js-study");
-      if (studyTimeInput) studyTimeInput.value = data.studyTime || "";
-      
-      const roomInput = document.querySelector(".js-room");
-      if (roomInput) roomInput.value = data.roomType || "";
-      
-      const addressInput = document.querySelector(".js-home");
-      if (addressInput) addressInput.value = data.address || "";
-      
-      const emergencyInput = document.querySelector(".js-emergency");
-      if (emergencyInput) emergencyInput.value = data.emergencyContact || "";
-      
-      const matesInput = document.querySelector(".js-friends");
-      if (matesInput) matesInput.value = data.preferredRoommates || "";
-      
-      const studyHabitsInput = document.querySelector(".js-studyHabbits");
-      if (studyHabitsInput) studyHabitsInput.value = data.studyHabits || "";
-      
-      const cleanInput = document.querySelector(".js-clean");
-      if (cleanInput) cleanInput.value = data.cleanliness || "";
-      
-      const lightInput = document.querySelector(".js-light");
-      if (lightInput) lightInput.value = data.lightSensitivity || "";
-      
-      const noiseInput = document.querySelector(".js-noise");
-      if (noiseInput) noiseInput.value = data.noiseLevel || "";
-      
-      const locationInput = document.querySelector(".js-location");
-      if (locationInput) locationInput.value = data.location || "";
-    } else {
-      // Profile not found, reset to Incomplete state
-      const badge = document.querySelector("#dashboard-page .status-row .badge");
-      if (badge) {
-        badge.classList.remove("complete");
-        badge.classList.add("incomplete");
-        badge.textContent = "Incomplete";
-      }
-
-      const profileBtn = document.querySelector('#dashboard-page a[onclick="showPreferences()"]');
-      if (profileBtn) {
-        profileBtn.textContent = "Complete Profile";
-      }
+      document.querySelector(".js-name").value = data.name || "";
+      document.querySelector(".js-clg").value = data.clg === "Shiv Nadar University" ? "snu" : "ssn";
+      document.querySelector(".js-sleep").value = data.sleepTime || "";
+      document.querySelector(".js-wake").value = data.wakeTime || "";
+      document.querySelector(".js-department").value = data.department || "";
+      document.querySelector(".js-year").value = data.year || "";
+      document.querySelector(".js-phone").value = data.phone || "";
+      document.querySelector(".js-studentId").value = data.studentId || "";
+      document.querySelector(".js-study").value = data.studyTime || "";
+      document.querySelector(".js-room-pref1").value = data.roomTypePref1 || "";
+      document.querySelector(".js-room-pref2").value = data.roomTypePref2 || "";
+      document.querySelector(".js-room-pref3").value = data.roomTypePref3 || "";
+      document.querySelector(".js-home").value = data.address || "";
+      document.querySelector(".js-emergency").value = data.emergencyContact || "";
+      document.querySelector(".js-friends").value = data.preferredRoommates || "";
+      document.querySelector(".js-studyHabbits").value = data.studyHabits || "";
+      document.querySelector(".js-clean").value = data.cleanliness || "";
+      document.querySelector(".js-light").value = data.lightSensitivity || "";
+      document.querySelector(".js-noise").value = data.noiseLevel || "";
+      document.querySelector(".js-location").value = data.location || "";
     }
   } catch (error) {
     console.error("Error loading student profile:", error);
   }
 }
-async function addCategory() {
-  const clg = document.getElementById("category-college").value;
-  const department = document.getElementById("category-department").value;
-  const year = document.getElementById("category-year").value;
-  const category = clg + "-" + department + "-" + year;
 
-  if (!(clg && department && year)) {
-    alert("Please fill all details");
-    return false;
-  }
+/* ------------------------------------------------------------------ */
+/* PDF export                                                          */
+/* ------------------------------------------------------------------ */
 
-  console.log(category);
-  const request = await fetch("/save-category", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(category),
-  });
-  console.log(request.status);
-  refreshCategories();
-}
-
-async function removeCategory(id) {
-  try {
-    const response = await fetch(`/delete-category/${id}`, {
-      method: "DELETE",
-    });
-    if (!response.ok) {
-      throw new Error(`Failed to delete category: ${response.status}`);
-    }
-    refreshCategories();
-  } catch (error) {
-    console.error("Error removing category:", error);
-    alert("Failed to remove category. Please try again.");
-  }
-}
-
-
-function showEditCategoryModal() {
-  const modalTemplate = document
-    .getElementById("modal-template")
-    .content.cloneNode(true);
-  modalTemplate.querySelector(".modal-body").innerHTML = `
-          <h3>Edit Category</h3>
-          <form class="form">
-            <div class="form-group">
-              <label for="category-name">Category Name</label>
-              <input id="category-name" type="text" class="form-input" value="1st Year SSN Students" />
-            </div>
-            <button type="submit" class="btn primary">Save Changes</button>
-          </form>
-        `;
-  document.body.appendChild(modalTemplate);
-  attachModalClose();
-}
-
-function showAddRoomTypeModal() {
-  const modalTemplate = document
-    .getElementById("modal-template")
-    .content.cloneNode(true);
-  modalTemplate.querySelector(".modal-body").innerHTML = `
-          <h3>Add Room Type</h3>
-          <form class="form">
-            <div class="form-group">
-              <label for="room-type-name">Room Type Name</label>
-              <input id="room-type-name" type="text" class="form-input" placeholder="e.g., Triple Sharing" />
-            </div>
-            <div class="form-group">
-              <label for="allowed-categories">Allowed Categories</label>
-              <select id="allowed-categories" class="form-select" multiple>
-                <option value="1st-year">1st Year SSN Students</option>
-                <option value="3rd-year">3rd Year SSN Students</option>
-              </select>
-            </div>
-            <button type="submit" class="btn primary">Add Room Type</button>
-          </form>
-        `;
-  document.body.appendChild(modalTemplate);
-  attachModalClose();
-}
-
-function showEditRoomTypeModal() {
-  const modalTemplate = document
-    .getElementById("modal-template")
-    .content.cloneNode(true);
-  modalTemplate.querySelector(".modal-body").innerHTML = `
-          <h3>Edit Room Type</h3>
-          <form class="form">
-            <div class="form-group">
-              <label for="room-type-name">Room Type Name</label>
-              <input id="room-type-name" type="text" class="form-input" value="Single Room" />
-            </div>
-            <div class="form-group">
-              <label for="allowed-categories">Allowed Categories</label>
-              <select id="allowed-categories" class="form-select" multiple>
-                <option value="1st-year">1st Year SSN Students</option>
-                <option value="3rd-year" selected>3rd Year SSN Students</option>
-              </select>
-            </div>
-            <button type="submit" class="btn primary">Save Changes</button>
-          </form>
-        `;
-  document.body.appendChild(modalTemplate);
-  attachModalClose();
-}
-
-async function showCategoryForm() {
-  const categorySelect = document.getElementById("category");
-  // Clear existing options except the placeholder
-  categorySelect.innerHTML = '<option value="">Select Category</option>';
-  try {
-    const response = await fetch("/get-category");
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-    const categories = await response.json();
-    // Generate options for each combination
-    categories.forEach((category) => {
-      const option = document.createElement("option");
-      option.value = category.category;
-      option.text = category.category.toUpperCase();
-      categorySelect.appendChild(option);
-    });
-  } catch (error) {
-    console.error("Error fetching categories:", error);
-  }
-}
-
-function attachModalClose() {
-  const closeBtn = document.querySelector(".modal-close");
-  closeBtn.addEventListener("click", () => {
-    const modal = closeBtn.closest(".modal");
-    modal.remove();
-  });
-}
-// Show rooms dynamically in the admin panel and refresh all room-type dropdowns
-async function showRooms() {
-  try {
-    const response = await fetch("/get-rooms");
-    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-    const rooms = await response.json();
-
-    // Populate admin room-type list
-    const roomList = document.getElementById("room-type-list");
-    if (roomList) {
-      roomList.innerHTML = "";
-      if (rooms.length === 0) {
-        roomList.innerHTML = '<div class="error-message">No room types added yet.</div>';
-      } else {
-        rooms.forEach((room) => {
-          const item = document.createElement("div");
-          item.className = "room-type-item";
-          item.innerHTML = `
-            <span><strong>${room.roomType}</strong> (${room.capacity || 3} members)</span>
-            <div class="room-type-actions">
-              <button class="btn secondary small remove" onclick="removeRoom(${room.roomId}, '${room.roomType}')">Remove</button>
-            </div>
-          `;
-          roomList.appendChild(item);
-        });
-      }
-    }
-
-    // Populate room-type dropdowns (student form + allot form)
-    let roomHTML = "";
-    rooms.forEach((room) => {
-      roomHTML += `<option value="${room.roomType}" data-capacity="${room.capacity || 3}">${room.roomType} (${room.capacity || 3} members)</option>`;
-    });
-
-    const studentRoomSelect = document.querySelector(".js-room");
-    if (studentRoomSelect) studentRoomSelect.innerHTML = roomHTML || '<option value="">No room types available</option>';
-
-    const allotRoomSelect = document.querySelector(".js-allot-room-type");
-    if (allotRoomSelect) allotRoomSelect.innerHTML = roomHTML || '<option value="">No room types available</option>';
-
-  } catch (error) {
-    console.error("Error loading rooms:", error);
-  }
-}
-
-async function removeRoom(id, roomType) {
-  if (!confirm(`Are you sure you want to remove room type "${roomType}"?`)) return;
-  try {
-    const response = await fetch(`/remove-room/${id}`, { method: "DELETE" });
-    if (!response.ok) throw new Error(`Failed to delete room type: ${response.status}`);
-    showRooms();
-  } catch (error) {
-    console.error("Error removing room:", error);
-    alert("Failed to remove room type. Please try again.");
-  }
-}
-
-// Populate department dropdown from categories (deduplicated)
-async function getDepartmentFromCategories() {
-  try {
-    const response = await fetch("/get-category");
-    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-    const categories = await response.json();
-
-    // Use a Set to deduplicate departments
-    const deptSet = new Set();
-    categories.forEach((cat) => {
-      const values = cat.category.split("-");
-      const department = (values[1] || cat.category).toUpperCase();
-      if (department) deptSet.add(department);
-    });
-
-    // Build HTML with a default option first, then deduplicated departments
-    let departmentHTML = '<option value="">-- Select Department --</option>';
-    deptSet.forEach((dept) => {
-      departmentHTML += `<option value="${dept}">${dept}</option>`;
-    });
-
-    const selectForm = document.querySelector(".js-department");
-    if (selectForm) {
-      selectForm.innerHTML = departmentHTML || '<option value="">No categories added yet</option>';
-    }
-  } catch (error) {
-    console.error("Error loading departments:", error);
-    const selectForm = document.querySelector(".js-department");
-    if (selectForm) {
-      selectForm.innerHTML = '<option value="">Failed to load departments</option>';
-    }
-  }
-}
-
-function sendRoomAndHostel() {
-  const addButton = document.querySelector(".js-add-button");
-  if (!addButton) return;
-  addButton.addEventListener("click", async (event) => {
-    event.preventDefault();
-    const name = document.querySelector(".js-getHostel").value;
-    const capacityInput = document.querySelector(".js-getRoomCapacity");
-    const capacity = capacityInput ? parseInt(capacityInput.value) : 3;
-    if (!name) {
-      alert("Please fill room type name.");
-      return;
-    }
-    const obj = { name, capacity };
-
-    try {
-      const response = await fetch("/room-details", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(obj),
-      });
-      const getResponse = await response.json();
-      console.log(getResponse);
-      // Clear inputs
-      document.querySelector(".js-getHostel").value = "";
-      if (capacityInput) capacityInput.value = "3";
-      // Refresh lists
-      showRooms();
-    } catch (error) {
-      console.error("Error adding room type:", error);
-      alert("Failed to add room type.");
-    }
-  });
-}
-
-function handleLoginWithAccountChooser() {
-  // Force Google to show account chooser
-  const googleAuthUrl = "/oauth2/authorization/google?prompt=select_account";
-  window.location.href = googleAuthUrl;
+/** Strips characters jsPDF's built-in fonts cannot render (emoji, arrows,
+ *  control chars) so PDF text never shows mojibake like "Ø=Üe". */
+function sanitizePdfText(text) {
+  return String(text)
+    .replace(/[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}\u{2190}-\u{21FF}\u{FE0F}\u{200D}]/gu, "")
+    .replace(/[\u{0000}-\u{001F}\u{007F}]/gu, "")
+    .trim();
 }
 
 function downloadPDF() {
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF();
 
-  // Add Header/Banner
-  doc.setFillColor(26, 82, 118); // Elegant Navy Blue
+  doc.setFillColor(26, 82, 118);
   doc.rect(0, 0, 210, 40, "F");
-
-  // Title
   doc.setFont("helvetica", "bold");
   doc.setFontSize(22);
   doc.setTextColor(255, 255, 255);
   doc.text("Roommate Harmony Allotment Chart", 15, 25);
-
-  // Subtitle
   doc.setFontSize(10);
   doc.setFont("helvetica", "italic");
   doc.setTextColor(220, 220, 220);
   doc.text(`Generated on: ${new Date().toLocaleString()}`, 15, 33);
 
-  // Info Section
   doc.setFont("helvetica", "normal");
   doc.setFontSize(11);
   doc.setTextColor(50, 50, 50);
-  const category = document.getElementById("category")?.value || "All";
-  const roomType = document.getElementById("allot-room-type")?.value || "All";
-  const location = document.getElementById("allot-location")?.value || "All";
-  
-  doc.text(`Location: ${location.toUpperCase()}`, 15, 52);
-  doc.text(`Category: ${category}`, 80, 52);
-  doc.text(`Room Type: ${roomType}`, 145, 52);
+  doc.text("Rooms Allotted (Room Type wise) + Unallotted Students", 15, 50);
 
-  // Line Separator
   doc.setDrawColor(200, 200, 200);
-  doc.line(15, 57, 195, 57);
+  doc.line(15, 55, 195, 55);
 
-  // Gather Table Data from DOM
-  const tableRows = [];
-  const resultsContainer = document.getElementById("results-container");
-  const rows = Array.from(resultsContainer.querySelectorAll("tbody tr"));
+  let y = 62;
+  const roomTypeBlocks = document.querySelectorAll("#results-container .room-type-results-block");
+  let firstTable = true;
 
-  rows.forEach((row) => {
-    const cells = Array.from(row.querySelectorAll("td"));
-    if (cells.length >= 5) {
-      tableRows.push([
-        cells[0].textContent.trim(),
-        cells[1].textContent.trim(),
-        cells[2].textContent.trim(),
-        cells[3].textContent.trim(),
-        cells[4].textContent.trim()
-      ]);
+  roomTypeBlocks.forEach((block) => {
+    const headerEl = block.querySelector(".room-type-results-header");
+    const tableEl = block.querySelector("table");
+    if (!headerEl || !tableEl) return;
+
+    const headerText = sanitizePdfText(headerEl.textContent.replace(/\s+/g, " "));
+    const isUnallotted = block.classList.contains("unallotted-block");
+    const isAllottedList = block.classList.contains("allotted-students-block");
+
+    if (!firstTable) {
+      doc.addPage();
+      y = 20;
     }
-  });
+    firstTable = false;
 
-  // Generate Table using jsPDF AutoTable plugin
-  doc.autoTable({
-    startY: 63,
-    head: [["Group", "Student 1", "Student 2", "Student 3", "Student 4"]],
-    body: tableRows,
-    theme: "grid",
-    headStyles: {
-      fillColor: [41, 128, 185], // Vibrant blue header
-      textColor: 255,
-      fontStyle: "bold"
-    },
-    alternateRowStyles: {
-      fillColor: [245, 247, 250] // Subtle grey/blue for striped rows
-    },
-    styles: {
-      fontSize: 10,
-      cellPadding: 4
-    }
-  });
-
-  // Save the PDF file
-  doc.save(`allotment_chart_${category}_${roomType}.pdf`);
-}
-
-function toggleDetailsList(containerId) {
-  const container = document.getElementById(containerId);
-  if (container) {
-    if (container.style.display === "none") {
-      container.style.display = "block";
-    } else {
-      container.style.display = "none";
-    }
-  }
-}
-
-async function loadAllotmentStats() {
-  const allottedCount = document.getElementById("allotted-students-count");
-  const unallottedCount = document.getElementById("unallotted-students-count");
-  const allottedList = document.getElementById("allotted-students-details-list");
-  const unallottedList = document.getElementById("unallotted-students-details-list");
-
-  if (!allottedCount) return;
-
-  try {
-    const response = await fetch("/api/admin/allotment-stats");
-    if (!response.ok) throw new Error("Failed to fetch statistics");
-    const data = await response.json();
-
-    allottedCount.textContent = data.allottedCount;
-    unallottedCount.textContent = data.unallottedCount;
-
-    // Populate allotted list
-    if (allottedList) {
-      allottedList.innerHTML = "";
-      if (data.allottedStudents.length === 0) {
-        allottedList.innerHTML = '<tr><td colspan="3" style="text-align: center; color: #64748b;">No allotted students found.</td></tr>';
-      } else {
-        data.allottedStudents.forEach((student) => {
-          const tr = document.createElement("tr");
-          tr.innerHTML = `
-            <td>${student.studentId}</td>
-            <td><strong>${student.name}</strong></td>
-            <td><span class="badge complete">${student.roomDetails}</span></td>
-          `;
-          allottedList.appendChild(tr);
-        });
-      }
-    }
-
-    // Populate unallotted list
-    if (unallottedList) {
-      unallottedList.innerHTML = "";
-      if (data.unallottedStudents.length === 0) {
-        unallottedList.innerHTML = '<tr><td colspan="3" style="text-align: center; color: #64748b;">No unallotted students found.</td></tr>';
-      } else {
-        data.unallottedStudents.forEach((student) => {
-          const tr = document.createElement("tr");
-          tr.innerHTML = `
-            <td>${student.studentId}</td>
-            <td><strong>${student.name}</strong></td>
-            <td><span class="badge incomplete">${student.category}</span></td>
-          `;
-          unallottedList.appendChild(tr);
-        });
-      }
-    }
-
-  } catch (error) {
-    console.error("Error loading allotment statistics:", error);
-  }
-}
-
-async function downloadRunPDF(runId, category, roomType, location) {
-  try {
-    const response = await fetch(`/api/admin/allotment-run/${runId}/groups`);
-    if (!response.ok) throw new Error("Failed to fetch run allotment details");
-    const groups = await response.json();
-
-    const { jsPDF } = window.jspdf;
-    const doc = new jsPDF();
-
-    // Add Header/Banner
-    doc.setFillColor(26, 82, 118); // Elegant Navy Blue
-    doc.rect(0, 0, 210, 40, "F");
-
-    // Title
     doc.setFont("helvetica", "bold");
-    doc.setFontSize(20);
-    doc.setTextColor(255, 255, 255);
-    doc.text("Roommate Harmony Allotment Chart", 15, 25);
+    doc.setFontSize(13);
+    doc.setTextColor(26, 82, 118);
+    doc.text(headerText, 15, y);
+    y += 5;
 
-    // Subtitle
-    doc.setFontSize(10);
-    doc.setFont("helvetica", "italic");
-    doc.setTextColor(220, 220, 220);
-    doc.text(`Generated on: ${new Date().toLocaleString()} (Run #${runId})`, 15, 33);
-
-    // Info Section
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(11);
-    doc.setTextColor(50, 50, 50);
-    doc.text(`Location: ${location.toUpperCase()}`, 15, 52);
-    doc.text(`Category: ${category}`, 80, 52);
-    doc.text(`Room Type: ${roomType}`, 145, 52);
-
-    // Line Separator
-    doc.line(15, 57, 195, 57);
-
-    // Gather table rows
-    const tableRows = [];
-    groups.forEach((group, index) => {
-      tableRows.push([
-        `Room ${group.roomId}`,
-        group.student_1 || "-",
-        group.student_2 || "-",
-        group.student_3 || "-",
-        group.student_4 || "-"
-      ]);
-    });
-
-    // Generate Table using jsPDF AutoTable plugin
-    doc.autoTable({
-      startY: 63,
-      head: [["Room ID", "Student 1", "Student 2", "Student 3", "Student 4"]],
-      body: tableRows,
-      theme: "grid",
-      headStyles: {
-        fillColor: [41, 128, 185],
-        textColor: 255,
-        fontStyle: "bold"
-      },
-      alternateRowStyles: {
-        fillColor: [245, 247, 250]
-      },
-      styles: {
-        fontSize: 9,
-        cellPadding: 4
+    const head = isUnallotted
+      ? [["ID", "Name", "Department & Year", "Preferences"]]
+      : isAllottedList
+        ? [["ID", "Name", "Department & Year", "Room"]]
+        : [["Room #", "Students"]];
+    const body = [];
+    tableEl.querySelectorAll("tbody tr").forEach((row) => {
+      const cells = Array.from(row.querySelectorAll("td")).map((c) => sanitizePdfText(c.textContent));
+      if (cells.length > 0) {
+        body.push(cells);
       }
     });
 
-    doc.save(`allotment_run_${runId}_${category}_${roomType}.pdf`);
-  } catch (error) {
-    console.error("Error generating run PDF:", error);
-    alert("Failed to download PDF for this allotment run. Please try again.");
-  }
-}
+    doc.autoTable({
+      startY: y,
+      head: head,
+      body: body,
+      theme: "grid",
+      headStyles: { fillColor: [41, 128, 185], textColor: 255, fontStyle: "bold" },
+      alternateRowStyles: { fillColor: [245, 247, 250] },
+      styles: { fontSize: 9, cellPadding: 3 },
+      margin: { left: 15, right: 15 },
+    });
+    y = doc.lastAutoTable.finalY + 12;
+  });
 
-function toggleMobileSidebar() {
-  const sidebar = document.querySelector(".app-sidebar");
-  const overlay = document.getElementById("sidebar-overlay");
-  if (sidebar && overlay) {
-    sidebar.classList.toggle("mobile-open");
-    if (sidebar.classList.contains("mobile-open")) {
-      overlay.style.display = "block";
-    } else {
-      overlay.style.display = "none";
-    }
+  if (firstTable) {
+    doc.text("No allotment results to display.", 15, 72);
   }
+
+  doc.save(`allotment_chart_${new Date().toISOString().slice(0, 10)}.pdf`);
 }

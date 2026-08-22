@@ -1387,3 +1387,597 @@ a {
     font-size: 0.65rem;
   }
 }
+/* ------------------------------------------------------------------ */
+/* Redesigned components (room types config, lock & allot, results)    */
+/* ------------------------------------------------------------------ */
+
+.locked-banner {
+  background: linear-gradient(135deg, #fef3c7, #fde68a);
+  border: 1px solid #f59e0b;
+  color: #78350f;
+  border-radius: 12px;
+  padding: 14px 18px;
+  margin-bottom: 20px;
+  font-size: 0.95rem;
+  box-shadow: 0 2px 8px rgba(245, 158, 11, 0.15);
+}
+
+.room-type-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 14px 16px;
+  border: 1px solid var(--border-color, rgba(0,0,0,0.08));
+  border-radius: 12px;
+  margin-bottom: 10px;
+  background: rgba(255, 255, 255, 0.7);
+}
+
+.room-type-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.room-type-meta {
+  font-size: 0.82rem;
+  color: #64748b;
+}
+
+.room-type-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.room-total-label {
+  display: flex;
+  flex-direction: column;
+  font-size: 0.78rem;
+  color: #64748b;
+  gap: 4px;
+}
+
+.room-total-input {
+  width: 90px;
+  padding: 6px 8px;
+  border: 1px solid rgba(0,0,0,0.12);
+  border-radius: 8px;
+}
+
+.room-type-results-block {
+  border: 1px solid var(--border-color, rgba(0,0,0,0.1));
+  border-radius: 12px;
+  margin-bottom: 16px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.65);
+}
+
+.room-type-results-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: 12px 16px;
+  background: rgba(26, 82, 118, 0.06);
+  border-bottom: 1px solid var(--border-color, rgba(0,0,0,0.08));
+  font-size: 1rem;
+}
+
+.room-type-results-block .modern-table {
+  margin: 0;
+  border: none;
+}
+
+.room-type-results-block .modern-table th,
+.room-type-results-block .modern-table td {
+  padding: 8px 16px;
+}
+
+.unallotted-block {
+  border-left: 4px solid #ef4444;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+}
+
+.lock-actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 20px;
+}
+
+/* ------------------------------------------------------------------ */
+/* Room Types management redesign                                      */
+/* ------------------------------------------------------------------ */
+
+.room-config-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.room-config-meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.room-types-table th {
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #64748b;
+}
+
+.room-types-table td {
+  vertical-align: middle;
+  padding: 10px 12px;
+}
+
+.room-edit-input {
+  width: 76px;
+  padding: 6px 8px;
+  border: 1px solid rgba(0, 0, 0, 0.14);
+  border-radius: 8px;
+  font-size: 0.9rem;
+  background: #fff;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.room-edit-input:focus {
+  outline: none;
+  border-color: var(--color-primary, #2563eb);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.room-edit-input:disabled {
+  background: #f1f5f9;
+  color: #94a3b8;
+}
+
+.add-room-type-panel {
+  margin-top: 26px;
+  border-top: 1px solid rgba(0, 0, 0, 0.08);
+  padding-top: 20px;
+}
+
+.add-room-type-title {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+}
+
+.add-room-type-title h4 {
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--text-color, #1e293b);
+  margin: 0;
+}
+
+.add-room-type-title .room-type-meta {
+  font-size: 0.82rem;
+  color: #64748b;
+}
+
+.room-add-btn-col {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+}
+
+.room-add-btn-col .btn {
+  width: 100%;
+  min-height: 42px;
+  white-space: nowrap;
+}
+
+/* ------------------------------------------------------------------ */
+/* Toasts + confirm dialogs                                            */
+/* ------------------------------------------------------------------ */
+
+.toast-container {
+  position: fixed;
+  top: 18px;
+  right: 18px;
+  z-index: 500;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-width: min(380px, calc(100vw - 36px));
+}
+
+.toast {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  background: #fff;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-left-width: 4px;
+  border-radius: 12px;
+  padding: 12px 14px;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.12);
+  font-size: 0.9rem;
+  color: var(--text-color, #1e293b);
+  animation: toast-in 0.25s ease;
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.toast-success { border-left-color: #16a34a; }
+.toast-error   { border-left-color: #dc2626; }
+.toast-warning { border-left-color: #f59e0b; }
+.toast-info    { border-left-color: #2563eb; }
+
+.toast-icon {
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #fff;
+  margin-top: 1px;
+}
+
+.toast-success .toast-icon { background: #16a34a; }
+.toast-error   .toast-icon { background: #dc2626; }
+.toast-warning .toast-icon { background: #f59e0b; }
+.toast-info    .toast-icon { background: #2563eb; }
+
+.toast-msg {
+  flex: 1;
+  line-height: 1.45;
+}
+
+.toast-close {
+  border: none;
+  background: transparent;
+  color: #94a3b8;
+  font-size: 1.1rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0 2px;
+}
+
+.toast-close:hover { color: #475569; }
+
+.toast-out {
+  opacity: 0;
+  transform: translateX(12px);
+}
+
+@keyframes toast-in {
+  from { opacity: 0; transform: translateX(16px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+/* ── Confirm dialog ───────────────────────── */
+.confirm-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 400;
+  padding: 20px;
+  animation: fade-in 0.18s ease;
+}
+
+.confirm-dialog {
+  width: min(460px, 100%);
+  background: #fff;
+  border-radius: 16px;
+  padding: 26px 26px 22px;
+  box-shadow: 0 20px 60px rgba(15, 23, 42, 0.25);
+  animation: dialog-in 0.22s ease;
+}
+
+.confirm-icon {
+  width: 52px;
+  height: 52px;
+  border-radius: 14px;
+  background: rgba(37, 99, 235, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.6rem;
+  margin-bottom: 16px;
+}
+
+.confirm-icon-danger {
+  background: rgba(220, 38, 38, 0.1);
+}
+
+.confirm-title {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--text-color, #1e293b);
+  margin-bottom: 10px;
+  font-family: "Poppins", sans-serif;
+}
+
+.confirm-message {
+  font-size: 0.92rem;
+  color: #475569;
+  line-height: 1.55;
+}
+
+.confirm-message p { margin-bottom: 10px; }
+
+.confirm-summary-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 12px 0;
+  font-size: 0.9rem;
+}
+
+.confirm-summary-table td {
+  padding: 8px 12px;
+  border-bottom: 1px solid #eef2f7;
+}
+
+.confirm-summary-table td:last-child {
+  text-align: right;
+  color: var(--text-color, #1e293b);
+}
+
+.confirm-note {
+  font-size: 0.82rem;
+  color: #64748b;
+  background: #f8fafc;
+  border-radius: 8px;
+  padding: 10px 12px;
+}
+
+.confirm-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.confirm-actions .btn {
+  min-width: 110px;
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes dialog-in {
+  from { opacity: 0; transform: translateY(10px) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* ================================================================== */
+/* Permanent Velvet Dark Theme                                         */
+/* ================================================================== */
+
+:root {
+  color-scheme: dark;
+
+  /* Brand — indigo-violet accent on deep velvet plum-navy */
+  --color-primary: #7c6cf0;
+  --color-primary-hover: #9485f6;
+  --color-primary-light: #2a2354;
+  --color-primary-muted: rgba(124, 108, 240, 0.16);
+
+  /* Semantic */
+  --color-success: #34d399;
+  --color-success-bg: rgba(52, 211, 153, 0.13);
+  --color-success-border: rgba(52, 211, 153, 0.35);
+  --color-danger: #fb7185;
+  --color-danger-bg: rgba(251, 113, 133, 0.13);
+  --color-danger-border: rgba(251, 113, 133, 0.35);
+  --color-warning: #fbbf24;
+  --color-warning-bg: rgba(251, 191, 36, 0.13);
+  --color-warning-border: rgba(251, 191, 36, 0.35);
+  --color-info: #38bdf8;
+  --color-info-bg: rgba(56, 189, 248, 0.13);
+  --color-info-border: rgba(56, 189, 248, 0.35);
+
+  /* Neutral — deep velvet plum-navy */
+  --color-bg: #0c0a1d;
+  --color-surface: #16122e;
+  --color-surface-hover: #221b42;
+  --color-border: #2c2450;
+  --color-border-hover: #413469;
+  --color-text: #f1ecfb;
+  --color-text-secondary: #c9bfe6;
+  --color-text-muted: #968abf;
+
+  /* Shadows */
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.45);
+  --shadow-md: 0 4px 10px rgba(0, 0, 0, 0.5);
+  --shadow-lg: 0 12px 28px rgba(0, 0, 0, 0.55);
+  --shadow-xl: 0 24px 52px rgba(0, 0, 0, 0.6);
+}
+
+body {
+  background: var(--color-bg);
+}
+
+h3, h4, h5, h6 {
+  color: var(--color-text);
+}
+
+.form-group label {
+  color: var(--color-text-secondary);
+}
+
+/* Select chevron tuned for the dark background */
+.form-select {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23968abf' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+}
+
+/* Tables */
+.modern-table th {
+  background: #1e1838;
+}
+
+.modern-table tr:hover {
+  background: #1e1838;
+}
+
+.badge.outline {
+  background: #1e1838;
+  color: var(--color-text-secondary);
+}
+
+/* Buttons */
+.btn.secondary {
+  background: var(--color-surface);
+}
+
+.btn.secondary:hover {
+  background: var(--color-surface-hover);
+}
+
+.btn.remove:hover {
+  background: rgba(251, 113, 133, 0.22);
+}
+
+/* Google button (landing) */
+.button {
+  border-color: #413469;
+  color: var(--color-text);
+}
+
+.button:hover {
+  background-color: var(--color-surface-hover);
+}
+
+.button:active {
+  background-color: #241d45;
+}
+
+/* Sidebar close + modal close hovers */
+.sidebar-close-btn:hover,
+.modal-close:hover {
+  background: var(--color-surface-hover);
+}
+
+/* Track-preferences detail chips */
+.detail-item {
+  background: #1e1838;
+}
+
+.detail-item:hover {
+  background: #271f4d;
+}
+
+/* Room management */
+.room-type-item {
+  background: rgba(22, 18, 46, 0.75);
+  border-color: var(--color-border);
+}
+
+.room-type-results-block {
+  background: rgba(22, 18, 46, 0.7);
+  border-color: var(--color-border);
+}
+
+.room-type-results-header {
+  background: rgba(124, 108, 240, 0.1);
+  border-bottom-color: var(--color-border);
+}
+
+.room-total-label,
+.room-type-meta {
+  color: var(--color-text-muted);
+}
+
+.room-edit-input,
+.room-total-input {
+  background: #0f0c22;
+  border-color: #413469;
+  color: var(--color-text);
+}
+
+.room-edit-input::placeholder {
+  color: var(--color-text-muted);
+}
+
+.add-room-type-panel {
+  border-top-color: var(--color-border);
+}
+
+.add-room-type-title h4 {
+  color: var(--color-text);
+}
+
+/* Locked banner — dark amber */
+.locked-banner {
+  background: linear-gradient(135deg, rgba(251, 191, 36, 0.16), rgba(251, 146, 60, 0.12));
+  border-color: rgba(251, 191, 36, 0.4);
+  color: #fcd34d;
+}
+
+/* Toasts */
+.toast {
+  background: #1d1739;
+  border-color: #332a5c;
+}
+
+/* Confirm dialog */
+.confirm-dialog {
+  background: #1d1739;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+}
+
+.confirm-icon {
+  background: rgba(124, 108, 240, 0.16);
+}
+
+.confirm-icon-danger {
+  background: rgba(251, 113, 133, 0.16);
+}
+
+.confirm-title,
+.confirm-summary-table td:last-child {
+  color: var(--color-text);
+}
+
+.confirm-message {
+  color: var(--color-text-secondary);
+}
+
+.confirm-summary-table td {
+  border-bottom-color: #332a5c;
+}
+
+.confirm-note {
+  background: #241d45;
+  color: var(--color-text-muted);
+}
+
+.toast-close {
+  color: var(--color-text-muted);
+}
+
+.toast-close:hover {
+  color: var(--color-text);
+}
+
+/* Misc */
+.login-note {
+  color: var(--color-text-muted);
+}
