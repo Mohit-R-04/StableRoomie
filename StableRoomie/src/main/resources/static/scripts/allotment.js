@@ -97,6 +97,28 @@ document
 /* Toast notifications + confirm dialogs                               */
 /* ------------------------------------------------------------------ */
 
+/* SVG icons from the sprite in index.html (feather-style, currentColor) */
+const ICONS = {
+  check: '<svg><use href="#i-check"></use></svg>',
+  x: '<svg><use href="#i-x"></use></svg>',
+  alert: '<svg><use href="#i-alert"></use></svg>',
+  info: '<svg><use href="#i-info"></use></svg>',
+  clock: '<svg><use href="#i-clock"></use></svg>',
+  bell: '<svg><use href="#i-bell"></use></svg>',
+  lock: '<svg><use href="#i-lock"></use></svg>',
+  reset: '<svg><use href="#i-reset"></use></svg>',
+  trash: '<svg><use href="#i-trash"></use></svg>',
+  download: '<svg><use href="#i-download"></use></svg>',
+  help: '<svg><use href="#i-help"></use></svg>',
+};
+
+const TOAST_ICONS = {
+  success: ICONS.check,
+  error: ICONS.x,
+  warning: ICONS.alert,
+  info: ICONS.info,
+};
+
 function showToast(message, type = "info", duration = 4000) {
   let container = document.getElementById("toast-container");
   if (!container) {
@@ -107,9 +129,8 @@ function showToast(message, type = "info", duration = 4000) {
   }
   const toast = document.createElement("div");
   toast.className = `toast toast-${type}`;
-  const icon = type === "success" ? "✓" : type === "error" ? "✕" : type === "warning" ? "⚠" : "ℹ";
   toast.innerHTML = `
-    <span class="toast-icon">${icon}</span>
+    <span class="toast-icon">${TOAST_ICONS[type] || ICONS.info}</span>
     <span class="toast-msg"></span>
     <button class="toast-close" aria-label="Dismiss">×</button>
   `;
@@ -129,7 +150,7 @@ function dismissToast(toast) {
  * Promise-based confirmation dialog. Resolves true on confirm, false on
  * cancel / overlay click / Escape.
  */
-function showConfirmDialog({ title, message, confirmLabel = "Confirm", cancelLabel = "Cancel", danger = false, icon = "❓" }) {
+function showConfirmDialog({ title, message, confirmLabel = "Confirm", cancelLabel = "Cancel", danger = false, icon = ICONS.help }) {
   return new Promise((resolve) => {
     const overlay = document.createElement("div");
     overlay.className = "confirm-overlay";
@@ -355,8 +376,8 @@ async function showRooms() {
     const hintEl = document.getElementById("room-setup-hint");
     if (hintEl) {
       hintEl.innerHTML = rooms.length > 0 && configuredCount === rooms.length
-        ? "✔ All room types configured — you can now run <strong>Lock and Allot</strong>."
-        : "⚠️ The warden <strong>must</strong> enter the students-per-room and total rooms for every room type before clicking <strong>Lock and Allot</strong>.";
+        ? ICONS.check + " All room types configured — you can now run <strong>Lock and Allot</strong>."
+        : ICONS.alert + " The warden <strong>must</strong> enter the students-per-room and total rooms for every room type before clicking <strong>Lock and Allot</strong>.";
     }
 
     // Admin room-type table with editable students-per-room and total rooms
@@ -444,7 +465,7 @@ async function removeRoom(id, roomType) {
     confirmLabel: "Remove",
     cancelLabel: "Cancel",
     danger: true,
-    icon: "🗑",
+    icon: ICONS.trash,
   });
   if (!ok) return;
   try {
@@ -569,7 +590,7 @@ async function loadRoomConfig() {
 
     if (lockBtn) {
       lockBtn.disabled = locked || !allConfigured;
-      lockBtn.textContent = locked ? "Allotment Completed" : "🔒 Lock and Allot";
+      lockBtn.innerHTML = locked ? "Allotment Completed" : ICONS.lock + " Lock and Allot";
       if (!locked && !allConfigured) {
         lockBtn.title = "Enter total rooms for all room types first";
       }
@@ -598,7 +619,7 @@ async function togglePreferencesWindow() {
       : "<p>Students will <strong>no longer</strong> be able to submit or edit their preferences.</p>",
     confirmLabel: open ? "Open Window" : "Close Window",
     cancelLabel: "Cancel",
-    icon: open ? "📢" : "🔒",
+    icon: open ? ICONS.bell : ICONS.lock,
   });
   if (!ok) return;
 
@@ -666,7 +687,7 @@ async function lockAndAllot() {
     message: summaryHtml,
     confirmLabel: "Lock & Allot",
     cancelLabel: "Cancel",
-    icon: "🔒",
+    icon: ICONS.lock,
   });
   if (!ok) return;
 
@@ -695,7 +716,7 @@ async function lockAndAllot() {
     showToast("Lock and Allot failed: " + error.message, "error", 6000);
   } finally {
     if (lockBtn) {
-      lockBtn.textContent = "🔒 Lock and Allot";
+      lockBtn.innerHTML = ICONS.lock + " Lock and Allot";
       lockBtn.disabled = false;
     }
   }
@@ -709,7 +730,7 @@ async function resetAllotment() {
     confirmLabel: "Reset Allotment",
     cancelLabel: "Cancel",
     danger: true,
-    icon: "↺",
+    icon: ICONS.reset,
   });
   if (!ok) return;
 
@@ -741,7 +762,7 @@ async function flushAllData() {
     confirmLabel: "Flush Everything",
     cancelLabel: "Cancel",
     danger: true,
-    icon: "🗑",
+    icon: ICONS.trash,
   });
   if (!ok) return;
 
@@ -764,7 +785,7 @@ async function flushAllData() {
     showToast("Flush failed: " + error.message, "error", 6000);
   } finally {
     if (btn) {
-      btn.textContent = "🗑 Flush All Data";
+      btn.innerHTML = ICONS.trash + " Flush All Data";
       btn.disabled = false;
     }
   }
@@ -945,7 +966,7 @@ function renderResults(data) {
   unallottedBlock.className = "room-type-results-block unallotted-block";
   unallottedBlock.innerHTML = `
     <div class="room-type-results-header">
-      <strong>⚠️ Unallotted Students</strong>
+      <strong>${ICONS.alert} Unallotted Students</strong>
       <span class="badge incomplete">${data.unallottedCount || 0} students</span>
     </div>
   `;

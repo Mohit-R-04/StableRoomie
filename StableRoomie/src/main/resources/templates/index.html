@@ -226,7 +226,7 @@
               <div class="dashboard-card glass-card" style="margin: 0; max-width: 100%;">
                 <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
                   <div>
-                    <h3>⚠️ Unallotted Students</h3>
+                    <h3><svg class="icon-svg"><use href="#i-alert"></use></svg>Unallotted Students</h3>
                     <p>Students who fit into no room type</p>
                   </div>
                   <span id="unallotted-students-count" class="badge incomplete" style="font-size: 1.2rem; padding: 6px 12px;">0</span>
@@ -303,7 +303,7 @@
                 </div>
 
                 <p id="room-setup-hint" class="login-note" style="margin-top: 14px;">
-                  ⚠️ The warden <strong>must</strong> enter the students-per-room and total rooms for every room type before clicking <strong>Lock and Allot</strong>.
+                  <svg class="icon-svg"><use href="#i-alert"></use></svg>The warden <strong>must</strong> enter the students-per-room and total rooms for every room type before clicking <strong>Lock and Allot</strong>.
                 </p>
 
                 <div class="add-room-type-panel">
@@ -370,7 +370,7 @@
             <div class="dashboard-card glass-card" style="max-width: 100%; margin-bottom: 24px;">
               <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
                 <div>
-                  <h3>📢 Preference Selection Window</h3>
+                  <h3><svg class="icon-svg"><use href="#i-bell"></use></svg>Preference Selection Window</h3>
                   <p>Students can submit and edit preferences only while this window is open.</p>
                 </div>
                 <span id="pref-window-status" class="badge incomplete">Closed</span>
@@ -383,12 +383,12 @@
 
             <!-- Locked status banner -->
             <div id="allotment-locked-banner" class="locked-banner" style="display: none;">
-              🔒 Preferences are <strong>locked</strong> and the allotment has been finalized.
+              <svg class="icon-svg"><use href="#i-lock"></use></svg>Preferences are <strong>locked</strong> and the allotment has been finalized.
             </div>
 
             <div class="dashboard-card glass-card" style="max-width: 100%;">
               <div class="card-header">
-                <h3>🔒 Lock &amp; Allot</h3>
+                <h3><svg class="icon-svg"><use href="#i-lock"></use></svg>Lock &amp; Allot</h3>
                 <p>Locks every student's preference and allots everyone in a single stretch</p>
               </div>
               <div class="card-content">
@@ -415,9 +415,9 @@
                 </div>
 
                 <div style="margin-top: 20px; display: flex; gap: 12px; flex-wrap: wrap;">
-                  <button id="lock-allot-btn" class="btn primary large" onclick="lockAndAllot()">🔒 Lock and Allot</button>
-                  <button id="reset-allotment-btn" class="btn secondary large" style="display: none;" onclick="resetAllotment()">↺ Reset Allotment</button>
-                  <button id="flush-all-btn" class="btn remove large" onclick="flushAllData()" title="Delete all students, rooms, groups and allotments — back to a fresh state">🗑 Flush All Data</button>
+                  <button id="lock-allot-btn" class="btn primary large" onclick="lockAndAllot()"><svg class="btn-icon"><use href="#i-lock"></use></svg>Lock and Allot</button>
+                  <button id="reset-allotment-btn" class="btn secondary large" style="display: none;" onclick="resetAllotment()"><svg class="btn-icon"><use href="#i-reset"></use></svg>Reset Allotment</button>
+                  <button id="flush-all-btn" class="btn remove large" onclick="flushAllData()" title="Delete all students, rooms, groups and allotments — back to a fresh state"><svg class="btn-icon"><use href="#i-trash"></use></svg>Flush All Data</button>
                 </div>
                 <p id="lock-allot-hint" class="login-note" style="margin-top: 10px;">
                   Allotment priority is based on preference <strong>update time</strong> (earliest first). Each student is placed
@@ -434,7 +434,7 @@
                   <h3>Allotment Results</h3>
                   <p>Rooms allotted room type wise + unallotted students</p>
                 </div>
-                <button class="btn secondary" onclick="downloadPDF()">📄 Download Chart (PDF)</button>
+                <button class="btn secondary" onclick="downloadPDF()"><svg class="btn-icon"><use href="#i-download"></use></svg>Download Chart (PDF)</button>
               </div>
               <div class="card-content">
                 <div id="results-container" class="results-list"></div>
@@ -491,10 +491,10 @@
           <!-- 2. Student Preference Form -->
           <section id="student-form" class="content-section student-only" style="display: none;">
             <div id="preferences-not-open-banner" class="locked-banner" style="display: none;">
-              ⏳ Preference selection has <strong>not been opened</strong> yet by the warden. Please check back later.
+              <svg class="icon-svg"><use href="#i-clock"></use></svg>Preference selection has <strong>not been opened</strong> yet by the warden. Please check back later.
             </div>
             <div id="preferences-locked-banner" class="locked-banner" style="display: none;">
-              🔒 Your preferences are <strong>locked</strong> because room allotment has already been finalized by the warden.
+              <svg class="icon-svg"><use href="#i-lock"></use></svg>Your preferences are <strong>locked</strong> because room allotment has already been finalized by the warden.
             </div>
             <div class="preferences-form glass-card" style="max-width: 100%;">
               <div class="card-header">
@@ -695,5 +695,22 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
     <script src="/scripts/allotment.js"></script>
+
+    <!-- SVG icon sprite (feather-style, stroke = currentColor) -->
+    <svg xmlns="http://www.w3.org/2000/svg" style="display: none;" aria-hidden="true">
+      <defs>
+        <symbol id="i-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></symbol>
+        <symbol id="i-x" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></symbol>
+        <symbol id="i-alert" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></symbol>
+        <symbol id="i-info" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></symbol>
+        <symbol id="i-clock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></symbol>
+        <symbol id="i-bell" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></symbol>
+        <symbol id="i-lock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></symbol>
+        <symbol id="i-reset" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></symbol>
+        <symbol id="i-trash" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></symbol>
+        <symbol id="i-download" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></symbol>
+        <symbol id="i-help" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></symbol>
+      </defs>
+    </svg>
   </body>
 </html>
