@@ -366,6 +366,21 @@
 
           <!-- 4. Admin Lock & Allot -->
           <section id="admin-allotment" class="content-section admin-only" style="display: none;">
+            <!-- Preference selection window control -->
+            <div class="dashboard-card glass-card" style="max-width: 100%; margin-bottom: 24px;">
+              <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+                <div>
+                  <h3>📢 Preference Selection Window</h3>
+                  <p>Students can submit and edit preferences only while this window is open.</p>
+                </div>
+                <span id="pref-window-status" class="badge incomplete">Closed</span>
+              </div>
+              <div class="card-content" style="display: flex; gap: 14px; align-items: center; flex-wrap: wrap;">
+                <button id="pref-window-btn" class="btn primary" onclick="togglePreferencesWindow()">Open Preference Selection</button>
+                <span id="pref-window-hint" class="login-note">Students cannot submit preferences until you open the window.</span>
+              </div>
+            </div>
+
             <!-- Locked status banner -->
             <div id="allotment-locked-banner" class="locked-banner" style="display: none;">
               🔒 Preferences are <strong>locked</strong> and the allotment has been finalized.
@@ -474,6 +489,9 @@
 
           <!-- 2. Student Preference Form -->
           <section id="student-form" class="content-section student-only" style="display: none;">
+            <div id="preferences-not-open-banner" class="locked-banner" style="display: none;">
+              ⏳ Preference selection has <strong>not been opened</strong> yet by the warden. Please check back later.
+            </div>
             <div id="preferences-locked-banner" class="locked-banner" style="display: none;">
               🔒 Your preferences are <strong>locked</strong> because room allotment has already been finalized by the warden.
             </div>

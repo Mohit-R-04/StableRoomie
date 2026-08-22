@@ -2,11 +2,13 @@
 
 ## ✅ Current Status
 
+> ⚠️ This is a historical run log. The canonical setup and commands now live in [`readme.md`](readme.md) §13 — the database is **Neon serverless PostgreSQL** and there is no local PostgreSQL service.
+
 Both services are currently **RUNNING** and operational:
 
 - **Java Backend**: http://localhost:8080 (PID: 24288)
 - **Flask Microservice**: http://localhost:5001 (PID: 25001)
-- **PostgreSQL Database**: localhost:5432 (stableromie)
+- **Database**: Neon serverless PostgreSQL (pooler endpoint, credentials in `.env`)
 
 ## 🚀 To Restart Services
 
@@ -19,24 +21,23 @@ lsof -i :8080 | grep -v COMMAND | awk '{print $2}' | xargs kill
 lsof -i :5001 | grep -v COMMAND | awk '{print $2}' | xargs kill
 
 # Stop PostgreSQL
-brew services stop postgresql@14
+# No local PostgreSQL — the app uses Neon serverless (see .env)
 ```
 
 ### Start All Services
 
-#### 1. PostgreSQL
-```bash
-brew services start postgresql@14
-```
+#### 1. Database
+
+No local PostgreSQL — the app connects to Neon serverless using `DB_*` values from `.env` (pooler JDBC URL with `sslmode=require&channelBinding=require`).
 
 #### 2. Java Backend
 ```bash
 cd /Users/mohitreddy/Documents/StableRoomie/StableRoomie
 export GOOGLE_CLIENT_ID=test-client-id
 export GOOGLE_CLIENT_SECRET=test-client-secret
-export DB_URL=jdbc:postgresql://localhost:5432/stableromie
-export DB_USERNAME=mohitreddy
-export DB_PASSWORD=""
+export DB_URL="jdbc:postgresql://<NEON_POOLER_HOST>/neondb?sslmode=require&channelBinding=require"
+export DB_USERNAME=neondb_owner
+export DB_PASSWORD="<NEON_PASSWORD>"
 mvn spring-boot:run
 ```
 
@@ -82,14 +83,13 @@ python3 app.py
 
 **Port already in use?**
 ```bash
-lsof -i :8080  # or :5001 or :5432
+lsof -i :8080  # or :5001
 kill <PID>
 ```
 
 **Database connection failed?**
 ```bash
-createdb stableromie  # Create database if needed
-psql -d stableromie -c "SELECT version()"  # Test connection
+psql "postgresql://neondb_owner:<NEON_PASSWORD>@<NEON_POOLER_HOST>/neondb?sslmode=require" -c "SELECT version()"  # Test connection
 ```
 
 **Python dependencies missing?**

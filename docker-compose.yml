@@ -1,24 +1,10 @@
 version: '3.8'
 
-services:
-  db:
-    image: postgres:14-alpine
-    container_name: stableroomie-db
-    restart: unless-stopped
-    environment:
-      POSTGRES_DB: stableromie
-      POSTGRES_USER: mohitreddy
-      POSTGRES_PASSWORD: password
-    ports:
-      - "5432:5432"
-    volumes:
-      - pgdata:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U mohitreddy -d stableromie"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
+# No local PostgreSQL container: the java-backend service connects directly
+# to Neon serverless PostgreSQL. DB_* and GOOGLE_* values are interpolated
+# from the root .env (docker compose auto-loads it from this directory).
 
+services:
   java-backend:
     build:
       context: ./StableRoomie
@@ -28,17 +14,14 @@ services:
     ports:
       - "8080:8080"
     environment:
-      - DB_URL=jdbc:postgresql://db:5432/stableromie
-      - DB_USERNAME=mohitreddy
-      - DB_PASSWORD=password
-      - DB_DRIVER=org.postgresql.Driver
-      - DB_DIALECT=org.hibernate.dialect.PostgreSQLDialect
-      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
-      - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
+      - DB_URL="${DB_URL}"
+      - DB_USERNAME="${DB_USERNAME}"
+      - DB_PASSWORD="${DB_PASSWORD}"
+      - DB_DRIVER="${DB_DRIVER}"
+      - DB_DIALECT="${DB_DIALECT}"
+      - GOOGLE_CLIENT_ID="${GOOGLE_CLIENT_ID}"
+      - GOOGLE_CLIENT_SECRET="${GOOGLE_CLIENT_SECRET}"
       - FLASK_API_URL=http://flask-api:5000
-    depends_on:
-      db:
-        condition: service_healthy
 
   flask-api:
     build:
@@ -68,6 +51,5 @@ services:
       - java-backend
 
 volumes:
-  pgdata:
   caddy_data:
   caddy_config:

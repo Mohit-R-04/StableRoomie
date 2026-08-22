@@ -41,6 +41,9 @@ public class StudentController {
     @Autowired
     private AllotmentService allotmentService;
 
+    @Autowired
+    private in.edu.ssn.hostel.service.SettingsService settingsService;
+
     @PostMapping("/saveStudents")
     public ResponseEntity<?> addStudent(@RequestBody Student stud, @AuthenticationPrincipal OAuth2User principal) {
         if (principal == null) {
@@ -51,6 +54,11 @@ public class StudentController {
         if (allotmentService.isLocked() || arepo.existsByStudentId(stud.getStudentId())) {
             return ResponseEntity.badRequest().body(Map.of(
                     "message", "Your preferences are locked because room allotment has already been finalized."));
+        }
+
+        if (!settingsService.arePreferencesOpen()) {
+            return ResponseEntity.badRequest().body(Map.of(
+                    "message", "Preference selection has not been opened yet by the warden. Please check back later."));
         }
 
         Student savedStudent = students.addStudent(stud);
@@ -83,23 +91,27 @@ public class StudentController {
         String email = principal.getAttribute("email");
         Student stud = students.getStudentByEmail(email);
         if (stud == null) {
-            return ResponseEntity.ok(Map.of("allotted", false, "message", "Please complete your profile."));
+            return ResponseEntity.ok(Map.of("allotted", false, "message", "Please complete your profile.",
+                    "locked", allotmentService.isLocked(), "preferencesOpen", settingsService.arePreferencesOpen()));
         }
 
         java.util.Optional<Allotment> allotmentOpt = arepo.findByStudentId(stud.getStudentId());
         if (allotmentOpt.isEmpty()) {
-            return ResponseEntity.ok(Map.of("allotted", false, "locked", allotmentService.isLocked()));
+            return ResponseEntity.ok(Map.of("allotted", false, "locked", allotmentService.isLocked(),
+                    "preferencesOpen", settingsService.arePreferencesOpen()));
         }
 
         Allotment allotment = allotmentOpt.get();
         Groups group = grepo.findById(allotment.getGroupId()).orElse(null);
         if (group == null) {
-            return ResponseEntity.ok(Map.of("allotted", false, "locked", allotmentService.isLocked()));
+            return ResponseEntity.ok(Map.of("allotted", false, "locked", allotmentService.isLocked(),
+                    "preferencesOpen", settingsService.arePreferencesOpen()));
         }
 
         Map<String, Object> response = new java.util.HashMap<>();
         response.put("allotted", true);
         response.put("locked", allotmentService.isLocked());
+        response.put("preferencesOpen", settingsService.arePreferencesOpen());
         response.put("roomId", group.getRoomId());
         response.put("groupId", group.getGroupId());
 

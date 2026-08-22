@@ -4,9 +4,6 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.oauth2.client.userinfo.OAuth2UserRequest;
-import org.springframework.security.oauth2.client.userinfo.OAuth2UserService;
-import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.security.web.SecurityFilterChain;
 
 import in.edu.ssn.hostel.service.CustomOAuth2UserService;
@@ -16,7 +13,7 @@ import in.edu.ssn.hostel.service.CustomOAuth2UserService;
 public class SecurityConfig {
 
     @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain filterChain(HttpSecurity http, CustomOAuth2UserService customOAuth2UserService) throws Exception {
         http
                 .csrf(csrf -> csrf.disable()) // Disable CSRF for OAuth2
                 .authorizeHttpRequests(auth -> auth
@@ -27,7 +24,7 @@ public class SecurityConfig {
                 .oauth2Login(oauth -> oauth
                 .loginPage("/login")
                 .userInfoEndpoint(userInfo -> userInfo
-                .userService(customOAuth2UserService())
+                .userService(customOAuth2UserService)
                 )
                 .defaultSuccessUrl("/process", true)
                 .failureUrl("/login?error=domain")
@@ -41,11 +38,6 @@ public class SecurityConfig {
                 );
 
         return http.build();
-    }
-
-    @Bean
-    public OAuth2UserService<OAuth2UserRequest, OAuth2User> customOAuth2UserService() {
-        return new CustomOAuth2UserService();
     }
 
     @Bean

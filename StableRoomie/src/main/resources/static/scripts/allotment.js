@@ -536,6 +536,27 @@ async function loadRoomConfig() {
       submittedCount.textContent = (results.allottedCount || 0) + (results.unallottedCount || 0);
     }
 
+    // Preference selection window state
+    const prefOpen = !!results.preferencesOpen;
+    currentPrefWindowOpen = prefOpen;
+    const prefStatus = document.getElementById("pref-window-status");
+    if (prefStatus) {
+      prefStatus.textContent = prefOpen ? "Open" : "Closed";
+      prefStatus.className = prefOpen ? "badge complete" : "badge incomplete";
+    }
+    const prefBtn = document.getElementById("pref-window-btn");
+    if (prefBtn) {
+      prefBtn.textContent = prefOpen ? "Close Preference Selection" : "Open Preference Selection";
+      prefBtn.classList.toggle("remove", prefOpen);
+      prefBtn.classList.toggle("primary", !prefOpen);
+    }
+    const prefHint = document.getElementById("pref-window-hint");
+    if (prefHint) {
+      prefHint.textContent = prefOpen
+        ? "Window is open — students can submit and edit their preferences."
+        : "Students cannot submit preferences until you open the window.";
+    }
+
     const locked = !!results.locked;
     const lockBtn = document.getElementById("lock-allot-btn");
     const resetBtn = document.getElementById("reset-allotment-btn");
@@ -559,6 +580,43 @@ async function loadRoomConfig() {
     }
   } catch (error) {
     console.error("Error loading room config:", error);
+  }
+}
+
+let currentPrefWindowOpen = false;
+
+async function togglePreferencesWindow() {
+  const open = !currentPrefWindowOpen;
+  const ok = await showConfirmDialog({
+    title: open ? "Open Preference Selection" : "Close Preference Selection",
+    message: open
+      ? "<p>All students will be able to <strong>submit and edit</strong> their preferences.</p>"
+      : "<p>Students will <strong>no longer</strong> be able to submit or edit their preferences.</p>",
+    confirmLabel: open ? "Open Window" : "Close Window",
+    cancelLabel: "Cancel",
+    icon: open ? "📢" : "🔒",
+  });
+  if (!ok) return;
+
+  try {
+    const response = await fetch("/api/admin/preferences-window", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ open: open }),
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.message || "Failed to update the preference window");
+    currentPrefWindowOpen = data.preferencesOpen;
+    showToast(
+      data.preferencesOpen
+        ? "Preference selection is now open for all students."
+        : "Preference selection is now closed.",
+      "success"
+    );
+    await loadRoomConfig();
+  } catch (error) {
+    console.error("Error updating preference window:", error);
+    showToast("Failed to update the preference window: " + error.message, "error");
   }
 }
 
@@ -1032,27 +1090,34 @@ function formatDateTime(value) {
   }
 }
 
-function setStudentFormLocked(locked) {
-  const banner = document.getElementById("preferences-locked-banner");
-  if (banner) banner.style.display = locked ? "block" : "none";
+/** Gates the student preference form by the warden's preference window and
+ *  the post-allotment lock: disabled while the window is closed or locked. */
+function setStudentFormState({ preferencesOpen, locked }) {
+  const notOpen = !preferencesOpen && !locked;
+  const disabled = locked || notOpen;
+
+  const notOpenBanner = document.getElementById("preferences-not-open-banner");
+  if (notOpenBanner) notOpenBanner.style.display = notOpen ? "block" : "none";
+  const lockedBanner = document.getElementById("preferences-locked-banner");
+  if (lockedBanner) lockedBanner.style.display = locked ? "block" : "none";
 
   const form = document.getElementById("student-pref-form");
   if (form) {
     const inputs = form.querySelectorAll("input, select, textarea, button[type='submit']");
     inputs.forEach((el) => {
-      el.disabled = locked;
+      el.disabled = disabled;
     });
   }
   const formLink = document.getElementById("link-student-form");
   if (formLink) {
-    formLink.style.pointerEvents = locked ? "none" : "auto";
-    formLink.style.opacity = locked ? "0.4" : "1";
-    formLink.title = locked ? "Preferences are locked after room allotment." : "";
+    formLink.style.pointerEvents = disabled ? "none" : "auto";
+    formLink.style.opacity = disabled ? "0.4" : "1";
+    formLink.title = locked ? "Preferences are locked after room allotment." : notOpen ? "Preference selection has not opened yet." : "";
   }
   const profileBtn = document.querySelector(".js-profile-action-btn");
   if (profileBtn) {
-    if (locked) {
-      profileBtn.textContent = "Preferences Locked";
+    if (disabled) {
+      profileBtn.textContent = locked ? "Preferences Locked" : "Not Opened Yet";
       profileBtn.disabled = true;
       profileBtn.removeAttribute("onclick");
       profileBtn.style.opacity = "0.6";
@@ -1083,7 +1148,7 @@ async function loadStudentAllotment() {
       badge.classList.remove("incomplete");
       badge.classList.add("complete");
       badge.textContent = "Allotted";
-      setStudentFormLocked(true);
+      setStudentFormState({ preferencesOpen: data.preferencesOpen !== false, locked: true });
 
       if (roomInfo) {
         roomInfo.textContent = `${data.roomType} (Room #${data.groupId})`;
@@ -1112,7 +1177,7 @@ async function loadStudentAllotment() {
       badge.classList.remove("complete");
       badge.classList.add("incomplete");
       badge.textContent = data.locked ? "Not Allotted" : "Not Allotted";
-      setStudentFormLocked(!!data.locked);
+      setStudentFormState({ preferencesOpen: data.preferencesOpen !== false, locked: !!data.locked });
 
       if (container) container.style.display = "none";
     }

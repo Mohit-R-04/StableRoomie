@@ -58,6 +58,9 @@ class AllotmentServiceTest {
     @Autowired
     private allotmentRepo arepo;
 
+    @Autowired
+    private SettingsService settingsService;
+
     private static HttpServer flaskStub;
 
     @BeforeAll
@@ -100,6 +103,16 @@ class AllotmentServiceTest {
         grepo.deleteAll();
         srepo.deleteAll();
         rrepo.deleteAll();
+        settingsService.setPreferencesOpen(false);
+    }
+
+    @Test
+    void preferencesWindowDefaultsClosedAndCanToggle() {
+        assertFalse(settingsService.arePreferencesOpen(), "window must start closed");
+        settingsService.setPreferencesOpen(true);
+        assertTrue(settingsService.arePreferencesOpen());
+        settingsService.setPreferencesOpen(false);
+        assertFalse(settingsService.arePreferencesOpen());
     }
 
     private void seedRoomsAndStudents() {

@@ -4,6 +4,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.oauth2.client.userinfo.DefaultOAuth2UserService;
 import org.springframework.security.oauth2.client.userinfo.OAuth2UserRequest;
@@ -12,10 +13,15 @@ import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
 import org.springframework.security.oauth2.core.OAuth2Error;
 import org.springframework.security.oauth2.core.user.DefaultOAuth2User;
 import org.springframework.security.oauth2.core.user.OAuth2User;
+import org.springframework.stereotype.Component;
 
+@Component
 public class CustomOAuth2UserService implements OAuth2UserService<OAuth2UserRequest, OAuth2User> {
 
-    private static final String ADMIN_EMAIL = "mohit2310893@ssn.edu.in";
+    /** Single admin email — configured in application.properties (`app.admin.email`, env `ADMIN_EMAIL`). */
+    @Value("${app.admin.email:}")
+    private String adminEmail;
+
     private static final String ALLOWED_DOMAIN = "@ssn.edu.in";
 
     @Override
@@ -29,7 +35,9 @@ public class CustomOAuth2UserService implements OAuth2UserService<OAuth2UserRequ
             throw new OAuth2AuthenticationException(new OAuth2Error("invalid_email"), "Access denied: Email is required.");
         }
 
-        String role = (email.equalsIgnoreCase(ADMIN_EMAIL) || email.equalsIgnoreCase("mohit.official04091k@gmail.com")) ? "ADMIN" : "STUDENT";
+        boolean isAdmin = adminEmail != null && !adminEmail.isBlank()
+                && email.equalsIgnoreCase(adminEmail.trim());
+        String role = isAdmin ? "ADMIN" : "STUDENT";
 
         Map<String, Object> attributes = new HashMap<>(user.getAttributes());
         attributes.put("role", role);

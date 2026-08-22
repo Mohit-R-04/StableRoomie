@@ -46,7 +46,7 @@ Manual hostel-room allocation does not naturally account for lifestyle compatibi
 ### Student
 
 - Google sign-in.
-- Preference profile creation and update (up to three room-type preferences).
+- Preference profile creation and update (up to three room-type preferences) — only while the warden's preference-selection window is open.
 - Profile prefill on later visits.
 - Created/updated timestamps shown on the dashboard and form.
 - Preference locking after the warden runs Lock & Allot.
@@ -54,7 +54,8 @@ Manual hostel-room allocation does not naturally account for lifestyle compatibi
 
 ### Administrator (warden)
 
-- Separate admin dashboard chosen from a hard-coded email mapping.
+- Separate admin dashboard granted to the single admin email configured via `app.admin.email` (env `ADMIN_EMAIL`).
+- Open/close the **preference-selection window** that gates whether students can submit or edit preferences.
 - Room-type management: name, students per room (`capacity`), total rooms available (`totalRooms`).
 - Overview statistics: allotted and unallotted students.
 - Rooms allotted shown room-type-wise.
@@ -82,8 +83,8 @@ Manual hostel-room allocation does not naturally account for lifestyle compatibi
 | Matching service | Python 3.10 image, Flask 3.1.1 | [`flask-api/Dockerfile`](flask-api/Dockerfile), [`requirements.txt`](flask-api/requirements.txt) |
 | Graph processing | NetworkX 3.2.1, python-louvain 0.16 | [`allot.py`](flask-api/service/allot.py) |
 | HTTP between services | Spring `RestTemplate`, Python `requests` | Java `AllotmentService` and Flask app |
-| Development DB | File-backed H2 in PostgreSQL compatibility mode | [`application.properties`](StableRoomie/src/main/resources/application.properties) |
-| Container DB | PostgreSQL 14 Alpine | [`docker-compose.yml`](docker-compose.yml) |
+| Development DB | File-backed H2 in PostgreSQL compatibility mode; the local `.env` points at Neon serverless PostgreSQL | [`application.properties`](StableRoomie/src/main/resources/application.properties) |
+| Container DB | None — the Compose stack connects directly to Neon serverless PostgreSQL | [`docker-compose.yml`](docker-compose.yml) |
 | Packaging | Maven, JAR, Gunicorn | Java and Flask Dockerfiles |
 | Local reverse proxy | Caddy 2 | [`Caddyfile`](Caddyfile) |
 | Cloud target | Azure Container Apps and Azure Container Registry | [`deploy/deploy-azure.sh`](deploy/deploy-azure.sh) |
@@ -93,7 +94,7 @@ Manual hostel-room allocation does not naturally account for lifestyle compatibi
 ```text
 StableRoomie/
 ├── readme.md                         # This complete project guide
-├── docker-compose.yml                # PostgreSQL, Java, Flask, Caddy
+├── docker-compose.yml                # Java, Flask, Caddy (DB: Neon serverless)
 ├── Caddyfile                         # Reverse proxy to Java backend
 ├── students_seed.sql                 # Optional 500-row manual seed script
 ├── AZURE_DEPLOYMENT.md               # Azure command guide
@@ -107,19 +108,22 @@ StableRoomie/
 │   ├── pom.xml
 │   ├── Dockerfile
 │   ├── Dockerfile.deploy
-│   └── src/main/
-│       ├── java/in/edu/ssn/hostel/
-│       │   ├── HostelAllotmentApplication.java
-│       │   ├── config/               # Spring Security
-│       │   ├── controller/           # MVC and REST entry points
-│       │   ├── service/              # Business logic (incl. AllotmentService)
-│       │   ├── repo/                 # JPA repositories
-│       │   └── model/                # Entities
-│       └── resources/
-│           ├── application.properties
-│           ├── import.sql
-│           ├── templates/index.html  # Single-page login/admin/student UI
-│           └── static/               # CSS, JavaScript, image
+│   └── src/
+│       ├── main/
+│       │   ├── java/in/edu/ssn/hostel/
+│       │   │   ├── HostelAllotmentApplication.java
+│       │   │   ├── config/               # Spring Security
+│       │   │   ├── controller/           # MVC and REST entry points
+│       │   │   ├── service/              # Business logic (incl. AllotmentService, TestDataSeeder)
+│       │   │   ├── repo/                 # JPA repositories
+│       │   │   └── model/                # Entities
+│       │   └── resources/
+│       │       ├── application.properties
+│       │       ├── import.sql
+│       │       ├── templates/index.html  # Single-page login/admin/student UI
+│       │       └── static/               # CSS, JavaScript, image
+│       └── test/java/in/edu/ssn/hostel/
+│           └── service/AllotmentServiceTest.java
 └── flask-api/
     ├── app.py                        # Active Flask application
     ├── app_temp.py                   # Legacy development variant (unused)
@@ -175,7 +179,8 @@ flowchart LR
 | Caddy | 80, 443 | TLS termination and reverse proxy in Docker Compose |
 | Spring Boot | 8080 | UI, OAuth session, REST APIs, persistence orchestration |
 | Flask/Gunicorn | 5000 | Two-phase matching engine |
-| PostgreSQL | 5432 | Persistent application data in Compose |
+
+There is no database container — the Compose stack's Java service connects to Neon serverless PostgreSQL using `DB_*` values from the root `.env`.
 
 The browser communicates only with Spring Boot. Spring Boot calls Flask synchronously during Lock & Allot, one call per non-empty room-type list. Flask never calls back into Java.
 
@@ -189,23 +194,25 @@ Spring Boot owns identity, HTTP sessions, UI delivery, validation/orchestration,
 
 1. The user opens `/` and clicks "Continue with Google".
 2. Spring Security runs the OAuth2 authorization-code flow.
-3. `CustomOAuth2UserService` adds a `role` attribute (`ADMIN` for the two hard-coded admin emails, `STUDENT` otherwise).
+3. `CustomOAuth2UserService` adds a `role` attribute (`ADMIN` for the single admin email from `app.admin.email`, `STUDENT` otherwise).
 4. `/process` redirects by role to `/admin/dashboard` or `/student/dashboard`.
 5. The frontend calls `/api/user-info` and shows the matching dashboard sections.
 
 ### 6.2 Student preference submission
 
-1. The student fills the preference form: name, student ID, college, department, year, contact details, lifestyle preferences, location, preferred roommates, and **1st/2nd/3rd room-type preferences**.
-2. `allotment.js` sends `POST /saveStudents` (no client-side timestamp — the server sets `createdAt`/`updatedAt`).
-3. `StudentController` overwrites the email with the authenticated OAuth email.
-4. If the allotment is locked (any group exists) or the student already has an allotment, HTTP 400 is returned with the locked message.
-5. Otherwise the student row is inserted/updated; `updatedAt` is refreshed on every edit, which is exactly what determines allotment priority.
+1. The warden opens the **preference-selection window** (Lock & Allot screen → "Open Preference Selection"). Until then, `/saveStudents` rejects every submission and the student form is disabled with a "not opened yet" banner.
+2. The student fills the preference form: name, student ID, college, department, year, contact details, lifestyle preferences, location, preferred roommates, and **1st/2nd/3rd room-type preferences**.
+3. `allotment.js` sends `POST /saveStudents` (no client-side timestamp — the server sets `createdAt`/`updatedAt`).
+4. `StudentController` overwrites the email with the authenticated OAuth email.
+5. If the allotment is locked (any group exists) or the student already has an allotment, HTTP 400 is returned with the locked message; if the preference window is closed, HTTP 400 is returned with the not-opened message.
+6. Otherwise the student row is inserted/updated; `updatedAt` is refreshed on every edit, which is exactly what determines allotment priority.
 
 ### 6.3 Warden setup
 
-1. Under **Room Types** the warden adds room types: name (e.g. `3-Sharing`), students per room (`capacity`), and **total rooms available** (`totalRooms`).
-2. The Lock & Allot screen shows a configuration summary (room type, students/room, total rooms, total capacity = `totalRooms × capacity`).
-3. The **Lock and Allot** button stays disabled until every room type has `totalRooms > 0`.
+1. **Open the preference window** (Lock & Allot screen) so students can submit; close it once collection is done.
+2. Under **Room Types** the warden adds room types: name (e.g. `3-Sharing`), students per room (`capacity`), and **total rooms available** (`totalRooms`).
+3. The Lock & Allot screen shows a configuration summary (room type, students/room, total rooms, total capacity = `totalRooms × capacity`).
+4. The **Lock and Allot** button stays disabled until every room type has both students-per-room (`capacity`) and total rooms (`totalRooms`) entered.
 
 ### 6.4 Lock & Allot (the single-stretch allotment)
 
@@ -234,7 +241,7 @@ flowchart TD
 
 Details:
 
-1. **Validation** — `AllotmentService.lockAndAllot()` refuses to run if allotment already exists or if any room type is missing `totalRooms`.
+1. **Validation** — `AllotmentService.lockAndAllot()` refuses to run if allotment already exists or if any room type is missing a valid `capacity` (students per room) or `totalRooms`.
 2. **Preference grouping** — Students are loaded ordered by `updatedAt` ascending (earliest preference fill/update first). Each student is placed into the list of their 1st-choice room type; if that list has reached `totalRooms × capacity` students, the 2nd choice is tried, then the 3rd. A student therefore lands in at most one room-type list.
 3. **Unallotted** — Students who fit into no list are reported as unallotted. No algorithm runs on them and no `allotment` row is created; they only appear in the results/PDF.
 4. **Two-phase matching per list** — Each non-empty room-type list is sorted by department (so same-department students are grouped together) and then sent to Flask (`POST /allot`, capacity = that type's students per room). Flask runs Pass 1 (fully mutual preferred-roommate groups) and Pass 2 (weighted compatibility graph + Louvain community detection, leftovers chunked).
@@ -287,7 +294,7 @@ Because Spring Boot sorts each list by department before calling Flask, same-dep
 
 - Hibernate manages schema creation/update with `ddl-auto=update`.
 - There is no Flyway or Liquibase migration history.
-- Development defaults to a file-backed H2 database; Docker Compose uses PostgreSQL 14.
+- Development defaults to a file-backed H2 database; the Compose stack and the local `StableRoomie/.env` both connect to Neon serverless PostgreSQL (pooler endpoint).
 - `students_seed.sql` is optional manual seed data (500 rows) and is not auto-executed.
 - `import.sql` contains no executable seed data.
 
@@ -402,6 +409,13 @@ The physical table is named `room_groups` because `groups` is a reserved SQL key
 | `group_id` | `Long` | Logical reference to a room_groups row (room) |
 | `student_id` | `Integer` | Logical reference to a student; UNIQUE across the table (one active allotment per student) |
 
+#### `settings`
+
+| Column | Java type | Constraint/meaning |
+|---|---|---|
+| `setting_id` | `Long` | Fixed primary key `1` (single row) |
+| `preferences_open` | `boolean` | Preference-selection window state; gates student submissions (defaults closed) |
+
 ### 8.4 Default data
 
 On an empty database, `roomService.initDefaultRooms()` creates:
@@ -495,11 +509,17 @@ Request shape:
 }
 ```
 
-The server ignores any request email and uses the OAuth principal email. `createdAt`/`updatedAt` are set server-side. If the allotment is locked or the student is already allotted, HTTP 400 returns:
+The server ignores any request email and uses the OAuth principal email. `createdAt`/`updatedAt` are set server-side. Rejections return HTTP 400:
 
 ```json
 {
   "message": "Your preferences are locked because room allotment has already been finalized."
+}
+```
+
+```json
+{
+  "message": "Preference selection has not been opened yet by the warden. Please check back later."
 }
 ```
 
@@ -510,7 +530,8 @@ Not yet grouped:
 ```json
 {
   "allotted": false,
-  "locked": false
+  "locked": false,
+  "preferencesOpen": true
 }
 ```
 
@@ -520,6 +541,7 @@ Grouped response shape:
 {
   "allotted": true,
   "locked": true,
+  "preferencesOpen": true,
   "roomId": 1,
   "groupId": 7,
   "roomType": "3-Sharing",
@@ -539,8 +561,10 @@ Grouped response shape:
 
 | Method | Path | Access | Purpose |
 |---|---|---|---|
+| `GET` | `/api/admin/preferences-window` | Authenticated | Current window state `{ "preferencesOpen": bool }` |
+| `POST` | `/api/admin/preferences-window` | Authenticated | Body `{ "open": true/false }` — opens/closes the preference-selection window for all students |
 | `POST` | `/api/admin/lock-and-allot` | Authenticated | Run the full single-stretch allotment; returns results |
-| `GET` | `/api/admin/allotment-results` | Authenticated | Rooms allotted room-type-wise + unallotted students |
+| `GET` | `/api/admin/allotment-results` | Authenticated | Rooms allotted room-type-wise + unallotted students (includes `preferencesOpen`) |
 | `POST` | `/api/admin/reset-allotment` | Authenticated | Delete all groups/allotments and unlock preferences |
 
 #### `POST /api/admin/lock-and-allot`
@@ -617,7 +641,7 @@ Flask no longer calls Java (`/getStudents` and `/save-groups` were removed), whi
 ## 10. Authentication and Authorization
 
 - Google OAuth 2.0 supplies email and profile attributes.
-- `CustomOAuth2UserService` adds a `role` attribute (`ADMIN` for the hard-coded admin emails, `STUDENT` otherwise); the granted Spring authority is always `ROLE_USER`.
+- `CustomOAuth2UserService` adds a `role` attribute (`ADMIN` for the single admin email from `app.admin.email`, `STUDENT` otherwise); the granted Spring authority is always `ROLE_USER`.
 - Explicitly public Spring paths: `/`, `/login`, `/api/user-info`, `/error`, `/favicon.ico`, `/styles.css`, `/scripts/**`, `/src/**`.
 - Every other Spring path requires authentication, but admin APIs do not enforce an admin authority.
 - CSRF is disabled globally; controller `@CrossOrigin` has no origin restriction; Flask enables unrestricted CORS.
@@ -629,9 +653,9 @@ For production, use role authorities, route authorization, CSRF protection, rest
 - One Thymeleaf template (`index.html`) serves login and both dashboards; JavaScript switches sections based on `/api/user-info`.
 - Permanent **velvet dark theme**: a deep plum-navy palette with an indigo-violet accent (`color-scheme: dark`), so the whole app — including native select dropdowns and scrollbars — renders consistently dark.
 - Student form: three room-type preference selects (1st required, 2nd/3rd optional, must differ), free-text department with a datalist, and a lock banner that disables the whole form once allotment is finalized.
-- Admin screens: **Room Types** (add, and edit students-per-room + total rooms inline), **Track Preferences** (search + created/updated columns), **Lock & Allot** (configuration summary, disabled-until-configured button, results, reset), **Overview** (stats + rooms allotted room-type-wise + unallotted).
-- Destructive or final actions (Lock & Allot, Reset Allotment, remove room type) use an in-app confirmation dialog (with a live summary for Lock & Allot); all feedback uses toast notifications instead of native `alert`/`confirm`.
-- PDF export (`downloadPDF`) renders every room-type results block plus the flat allotted-students table and the unallotted students table via jsPDF/AutoTable.
+- Admin screens: **Room Types** (management table with inline students-per-room + total rooms editing, per-row Configured/Needs-rooms status badges, and a header showing "X of Y configured", total capacity, and a Ready for Lock & Allot badge), **Track Preferences** (search + created/updated columns), **Lock & Allot** (configuration summary, disabled-until-configured button, results, reset), **Overview** (stats + rooms allotted room-type-wise + unallotted).
+- Destructive or final actions (Lock & Allot, Reset Allotment, remove room type) use an in-app confirmation dialog — Lock & Allot shows a live summary (students with preferences, total capacity, expected unallotted). All feedback uses toast notifications instead of native `alert`/`confirm`.
+- PDF export (`downloadPDF`) renders every room-type results block plus the flat allotted-students table and the unallotted students table via jsPDF/AutoTable; PDF text is sanitized (emoji/arrows stripped) so jsPDF's built-in fonts never render mojibake.
 
 ## 12. Configuration
 
@@ -641,23 +665,30 @@ For production, use role authorities, route authorization, CSRF protection, rest
 |---|---|---|---|
 | `GOOGLE_CLIENT_ID` | Yes for OAuth | None | Google OAuth client ID |
 | `GOOGLE_CLIENT_SECRET` | Yes for OAuth | None | Google OAuth client secret |
-| `DB_URL` | No | `jdbc:h2:file:./data/stableromie;DB_CLOSE_ON_EXIT=FALSE;MODE=PostgreSQL` | JDBC URL |
+| `DB_URL` | No | `jdbc:h2:file:./data/stableromie;DB_CLOSE_ON_EXIT=FALSE;MODE=PostgreSQL` | JDBC URL (local `.env` uses the Neon pooler URL, see §13.3) |
 | `DB_USERNAME` | No | `sa` | Database user |
 | `DB_PASSWORD` | No | Empty | Database password |
 | `DB_DRIVER` | No | `org.h2.Driver` | JDBC driver |
 | `DB_DIALECT` | No | `org.hibernate.dialect.H2Dialect` | Hibernate dialect |
 | `FLASK_API_URL` | No | `http://127.0.0.1:5000` | Flask base URL |
 | `SEED_TEST_STUDENTS` | No | `true` | Seed 200 test students when the student table is empty |
+| `ADMIN_EMAIL` | No | `mohit2310893@ssn.edu.in` | The single account that gets the ADMIN dashboard |
+
+The shipped `StableRoomie/.env` also duplicates the database settings as `SPRING_DATASOURCE_URL`, `SPRING_DATASOURCE_USERNAME`, and `SPRING_DATASOURCE_PASSWORD`. Spring Boot's relaxed binding accepts either form (explicit environment variables override `application.properties`), and both are kept identical to avoid ambiguity.
 
 ### 12.2 Google OAuth redirect URI
 
-For local development: `http://localhost:8080/login/oauth2/code/google`. For deployment, use the equivalent HTTPS callback.
+For local development: `http://localhost:8080/login/oauth2/code/google`. For deployment, use the equivalent HTTPS callback. `redirect_uri_mismatch` errors mean that exact URI is not registered under the client's "Authorized redirect URIs" in Google Cloud Console.
+
+### 12.3 dotenv files
+
+The app uses spring-dotenv, which loads a `.env` file from the **working directory** (`StableRoomie/.env`) on top of real environment variables. The repository-root `.env` is only a reference copy and is not loaded when running from `StableRoomie/`. The `.env` in this project contains the local Google OAuth client, the Neon serverless PostgreSQL connection (pooler JDBC URL, `neondb_owner` credentials), driver, and dialect settings. Both `.env` files are gitignored so credentials never enter version control.
 
 ## 13. Running Locally
 
 ### 13.1 Prerequisites
 
-- Java 17, Maven, Python 3, Google OAuth client credentials, optional PostgreSQL 14.
+- Java 17, Maven, Python 3, Google OAuth client credentials, and a Neon serverless database (the current setup; a local PostgreSQL 14 also works).
 
 ### 13.2 Option A: Spring Boot with default H2 and Flask
 
@@ -688,13 +719,28 @@ python3 app.py
 
 Open `http://localhost:8080`.
 
-### 13.3 Option B: Local PostgreSQL
+### 13.3 Option B: PostgreSQL (local or Neon serverless)
 
-Create the `stableromie` database, then start Java with `DB_URL`, `DB_USERNAME`, `DB_PASSWORD`, `DB_DRIVER=org.postgresql.Driver`, and `DB_DIALECT=org.hibernate.dialect.PostgreSQLDialect` set, plus the OAuth and Flask variables.
+**Local:** create the `stableromie` database, then start Java with `DB_URL`, `DB_USERNAME`, `DB_PASSWORD`, `DB_DRIVER=org.postgresql.Driver`, and `DB_DIALECT=org.hibernate.dialect.PostgreSQLDialect` set, plus the OAuth and Flask variables.
 
-### 13.4 Optional sample students
+**Neon (serverless):** point `DB_URL` (and `SPRING_DATASOURCE_URL`) at the Neon **pooler** JDBC URL with `?sslmode=require&channelBinding=require` and the `neondb_owner` credentials. `ddl-auto=update` creates the schema on first boot, and the auto-seeders populate the 200 test students plus the default room types (see §8.4/§13.4). Both `.env` files are gitignored, so DB credentials stay out of version control.
 
-`students_seed.sql` contains 500 student inserts (IDs 1000-1499) with `room_type_pref_1/2/3` and staggered `created_at`/`updated_at` timestamps. Apply it manually only after Hibernate has created the `student` table and only in a disposable development database:
+```bash
+export DB_URL="jdbc:postgresql://<your-pooler-host>/neondb?sslmode=require&channelBinding=require"
+export DB_USERNAME="neondb_owner"
+export DB_PASSWORD="<neon-password>"
+export DB_DRIVER="org.postgresql.Driver"
+export DB_DIALECT="org.hibernate.dialect.PostgreSQLDialect"
+```
+
+On a fresh Neon database the preference-selection window defaults **closed** (open it under Lock & Allot → 📢 Preference Selection Window before students can submit) and the default room types (3-Sharing ×20, 2-Sharing ×10, 4-Sharing ×5) seed lazily the first time the Room Types screen is opened.
+
+The Docker Compose stack (`docker compose up --build`) has **no local PostgreSQL container** — `java-backend` interpolates `DB_URL`/`DB_USERNAME`/`DB_PASSWORD`/`DB_DRIVER`/`DB_DIALECT` and the `GOOGLE_*` values from the root `.env` and connects straight to Neon.
+
+### 13.4 Test data
+
+- **Automatic seeder:** on first boot with an empty `student` table, `TestDataSeeder` inserts 200 test students (IDs 1001-1200, see §8.4). Disable with `SEED_TEST_STUDENTS=false`.
+- **Manual SQL:** `students_seed.sql` contains 500 student inserts (IDs 1000-1499) with `room_type_pref_1/2/3` and staggered `created_at`/`updated_at` timestamps. Apply it manually only after Hibernate has created the `student` table and only in a disposable development database:
 
 ```bash
 psql -d stableromie -f students_seed.sql
@@ -703,7 +749,7 @@ psql -d stableromie -f students_seed.sql
 ### 13.5 Basic health checks
 
 ```bash
-curl http://localhost:5000/health
+curl http://127.0.0.1:5000/health   # or :5001 when AirPlay Receiver holds port 5000 on macOS
 curl http://localhost:8080/api/user-info
 ```
 
@@ -731,6 +777,7 @@ mvn test
 | Lock & Allot with no students | HTTP 400 "No students have submitted their preferences yet." |
 | Lock & Allot run twice | HTTP 400 "Allotment has already been finalized..." |
 | Student edits preferences after Lock & Allot | HTTP 400 locked message; form disabled in UI |
+| Student submits while the preference window is closed | HTTP 400 "not opened yet" message; form disabled in UI |
 | Room mutation while locked | HTTP 400; warden must reset first |
 | Student has fewer than 3 preferences | Remaining preference slots are skipped |
 | Preferred room type not configured | That preference is skipped; next one tried |
@@ -760,7 +807,7 @@ mvn test
 ### Phase 1: Correctness and integrity
 
 1. Add `@Transactional` guarantees already present in `AllotmentService` to any future multi-write flows.
-2. Add input validation for capacity, totalRooms, and student IDs.
+2. Add input validation for student IDs (capacity/totalRooms validation already exists in `AllotmentService` and the room endpoints).
 3. Expand automated coverage beyond `AllotmentServiceTest` to controllers, security, room mutations, and PDF data.
 4. Fix `year` serialization/rendering consistency (backend `year`, frontend uses `student.year`).
 
@@ -796,6 +843,8 @@ mvn test
 | Student APIs | [`StudentController.java`](StableRoomie/src/main/java/in/edu/ssn/hostel/controller/StudentController.java) |
 | Lock & Allot / results / reset | [`AdminAllotmentController.java`](StableRoomie/src/main/java/in/edu/ssn/hostel/controller/AdminAllotmentController.java), [`AllotmentService.java`](StableRoomie/src/main/java/in/edu/ssn/hostel/service/AllotmentService.java) |
 | Room management | [`roomsController.java`](StableRoomie/src/main/java/in/edu/ssn/hostel/controller/roomsController.java), [`roomService.java`](StableRoomie/src/main/java/in/edu/ssn/hostel/service/roomService.java) |
+| Test data seeding | [`TestDataSeeder.java`](StableRoomie/src/main/java/in/edu/ssn/hostel/service/TestDataSeeder.java) |
+| Preference window / settings | [`SettingsService.java`](StableRoomie/src/main/java/in/edu/ssn/hostel/service/SettingsService.java), [`Settings.java`](StableRoomie/src/main/java/in/edu/ssn/hostel/model/Settings.java) |
 | Entities | [`model/`](StableRoomie/src/main/java/in/edu/ssn/hostel/model/) |
 | Flask two-phase endpoint | [`flask-api/app.py`](flask-api/app.py) |
 | Matching algorithm | [`flask-api/service/allot.py`](flask-api/service/allot.py) |

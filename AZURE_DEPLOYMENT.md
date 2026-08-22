@@ -101,9 +101,9 @@ az containerapp create \
   --cpu 1.0 \
   --memory 2Gi \
   --env-vars \
-    DB_URL="jdbc:postgresql://<DB_HOST>:5432/stableromie" \
-    DB_USERNAME="mohitreddy" \
-    DB_PASSWORD="<DB_PASSWORD>" \
+    DB_URL="jdbc:postgresql://<NEON_POOLER_HOST>/neondb?sslmode=require&channelBinding=require" \
+    DB_USERNAME="neondb_owner" \
+    DB_PASSWORD="<NEON_PASSWORD>" \
     DB_DRIVER="org.postgresql.Driver" \
     DB_DIALECT="org.hibernate.dialect.PostgreSQLDialect" \
     GOOGLE_CLIENT_ID="<YOUR_CLIENT_ID>" \

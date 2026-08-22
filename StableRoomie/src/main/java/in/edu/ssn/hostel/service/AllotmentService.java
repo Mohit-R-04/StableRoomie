@@ -44,6 +44,9 @@ public class AllotmentService {
     @Value("${FLASK_API_URL:http://127.0.0.1:5000}")
     private String flaskApiUrl;
 
+    @Autowired
+    private SettingsService settingsService;
+
     /** Preferences are locked once any group exists. */
     public boolean isLocked() {
         return grepo.count() > 0;
@@ -189,6 +192,7 @@ public class AllotmentService {
     public Map<String, Object> getResults() {
         Map<String, Object> result = new HashMap<>();
         result.put("locked", isLocked());
+        result.put("preferencesOpen", settingsService.arePreferencesOpen());
 
         List<Rooms> roomTypes = rrepo.findAll(Sort.by("roomId"));
         List<Map<String, Object>> roomTypeList = new ArrayList<>();

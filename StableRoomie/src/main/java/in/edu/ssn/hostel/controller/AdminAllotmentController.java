@@ -7,9 +7,12 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
+import in.edu.ssn.hostel.model.Settings;
 import in.edu.ssn.hostel.service.AllotmentService;
+import in.edu.ssn.hostel.service.SettingsService;
 
 @RestController
 @CrossOrigin
@@ -17,6 +20,22 @@ public class AdminAllotmentController {
 
     @Autowired
     private AllotmentService allotmentService;
+
+    @Autowired
+    private SettingsService settingsService;
+
+    @GetMapping("/api/admin/preferences-window")
+    public ResponseEntity<?> getPreferencesWindow() {
+        return ResponseEntity.ok(Map.of("preferencesOpen", settingsService.arePreferencesOpen()));
+    }
+
+    /** Opens or closes the preference-selection window for all students. */
+    @PostMapping("/api/admin/preferences-window")
+    public ResponseEntity<?> setPreferencesWindow(@RequestBody Map<String, Object> body) {
+        boolean open = Boolean.TRUE.equals(body.get("open"));
+        Settings settings = settingsService.setPreferencesOpen(open);
+        return ResponseEntity.ok(Map.of("preferencesOpen", settings.isPreferencesOpen()));
+    }
 
     @PostMapping("/api/admin/lock-and-allot")
     public ResponseEntity<?> lockAndAllot() {
