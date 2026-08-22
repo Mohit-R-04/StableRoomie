@@ -56,4 +56,11 @@ public class AdminAllotmentController {
         allotmentService.resetAllotment();
         return ResponseEntity.ok(Map.of("message", "Allotment reset. Preferences are unlocked."));
     }
+
+    /** Deletes every student, room type, group and allotment, and resets the
+     *  preference window to closed. Full wipe back to the fresh state. */
+    @PostMapping("/api/admin/flush-all-data")
+    public ResponseEntity<?> flushAllData() {
+        return ResponseEntity.ok(allotmentService.flushAllData());
+    }
 }

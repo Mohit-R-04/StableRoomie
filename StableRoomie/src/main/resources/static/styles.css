@@ -1721,6 +1721,16 @@ a {
 
 .confirm-message p { margin-bottom: 10px; }
 
+.confirm-list {
+  margin: 10px 0 12px;
+  padding-left: 20px;
+  color: #475569;
+}
+
+.confirm-list li {
+  margin-bottom: 6px;
+}
+
 .confirm-summary-table {
   width: 100%;
   border-collapse: collapse;
@@ -1954,6 +1964,10 @@ h3, h4, h5, h6 {
 .confirm-title,
 .confirm-summary-table td:last-child {
   color: var(--color-text);
+}
+
+.confirm-list {
+  color: var(--color-text-secondary);
 }
 
 .confirm-message {

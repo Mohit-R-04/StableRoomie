@@ -156,6 +156,9 @@ public class AllotmentService {
         }
 
         // Step 4: unallotted students are reported only (no allotment rows).
+        // Finalizing also closes the preference window; only the warden can
+        // reopen it (manually, after a reset).
+        settingsService.setPreferencesOpen(false);
         return getResults();
     }
 
@@ -254,10 +257,28 @@ public class AllotmentService {
         return result;
     }
 
-    /** Clears all groups and allotments, unlocking preferences for a re-run. */
+    /** Clears all groups and allotments so the allotment can be run again.
+     *  The preference window is left as the warden set it — it stays closed
+     *  after a lock-and-allot until the warden manually opens it. */
     @Transactional
     public void resetAllotment() {
         arepo.deleteAll();
         grepo.deleteAll();
+    }
+
+    /**
+     * Full wipe back to the fresh-database state: deletes every allotment,
+     * group, student and room type, and resets the preference window to
+     * closed. Destructive — the warden confirms this in the UI.
+     */
+    @Transactional
+    public Map<String, Object> flushAllData() {
+        arepo.deleteAll();
+        grepo.deleteAll();
+        srepo.deleteAll();
+        rrepo.deleteAll();
+        settingsService.setPreferencesOpen(false);
+        return Map.of("message",
+                "All data flushed. Students, room types, groups and allotments were deleted.");
     }
 }

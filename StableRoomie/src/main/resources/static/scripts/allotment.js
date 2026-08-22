@@ -726,6 +726,50 @@ async function resetAllotment() {
   }
 }
 
+/** Full wipe back to the fresh state: students, rooms, groups, allotments. */
+async function flushAllData() {
+  const ok = await showConfirmDialog({
+    title: "Flush All Data",
+    message:
+      "<p>This <strong>permanently deletes everything</strong> in the system:</p>" +
+      "<ul class=\"confirm-list\">" +
+      "<li>All student profiles and submitted preferences</li>" +
+      "<li>All room types and their room counts</li>" +
+      "<li>All groups and allotment results</li>" +
+      "</ul>" +
+      "<p class=\"confirm-note\">The preference window resets to <strong>closed</strong>. This action <strong>cannot be undone</strong>.</p>",
+    confirmLabel: "Flush Everything",
+    cancelLabel: "Cancel",
+    danger: true,
+    icon: "🗑",
+  });
+  if (!ok) return;
+
+  const btn = document.getElementById("flush-all-btn");
+  if (btn) {
+    btn.textContent = "Flushing...";
+    btn.disabled = true;
+  }
+
+  try {
+    const response = await fetch("/api/admin/flush-all-data", { method: "POST" });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.message || "Flush failed");
+    currentPrefWindowOpen = false;
+    document.getElementById("allotment-results").style.display = "none";
+    await loadRoomConfig();
+    showToast("All data flushed. The app is back to a fresh state.", "success", 6000);
+  } catch (error) {
+    console.error("Error flushing all data:", error);
+    showToast("Flush failed: " + error.message, "error", 6000);
+  } finally {
+    if (btn) {
+      btn.textContent = "🗑 Flush All Data";
+      btn.disabled = false;
+    }
+  }
+}
+
 /* ------------------------------------------------------------------ */
 /* Admin: results (room-type-wise rooms + unallotted students)         */
 /* ------------------------------------------------------------------ */
@@ -1094,16 +1138,19 @@ function formatDateTime(value) {
   }
 }
 
-/** Gates the student preference form by the warden's preference window and
- *  the post-allotment lock: disabled while the window is closed or locked. */
+/** Gates the student preference form by the warden's preference window only:
+ *  disabled while the window is closed. The lock state is shown as an
+ *  informational banner but does not itself disable the form — finalizing
+ *  the allotment closes the window, so the window is the sole gate. */
 function setStudentFormState({ preferencesOpen, locked }) {
-  const notOpen = !preferencesOpen && !locked;
-  const disabled = locked || notOpen;
+  const isOpen = preferencesOpen !== false;
+  const disabled = !isOpen;
+  const showLockedBanner = !!locked && !isOpen; // lock explains why, when both apply
 
   const notOpenBanner = document.getElementById("preferences-not-open-banner");
-  if (notOpenBanner) notOpenBanner.style.display = notOpen ? "block" : "none";
+  if (notOpenBanner) notOpenBanner.style.display = showLockedBanner ? "none" : disabled ? "block" : "none";
   const lockedBanner = document.getElementById("preferences-locked-banner");
-  if (lockedBanner) lockedBanner.style.display = locked ? "block" : "none";
+  if (lockedBanner) lockedBanner.style.display = showLockedBanner ? "block" : "none";
 
   const form = document.getElementById("student-pref-form");
   if (form) {
@@ -1116,12 +1163,12 @@ function setStudentFormState({ preferencesOpen, locked }) {
   if (formLink) {
     formLink.style.pointerEvents = disabled ? "none" : "auto";
     formLink.style.opacity = disabled ? "0.4" : "1";
-    formLink.title = locked ? "Preferences are locked after room allotment." : notOpen ? "Preference selection has not opened yet." : "";
+    formLink.title = disabled ? (showLockedBanner ? "Preferences are locked after room allotment." : "Preference selection has not opened yet.") : "";
   }
   const profileBtn = document.querySelector(".js-profile-action-btn");
   if (profileBtn) {
     if (disabled) {
-      profileBtn.textContent = locked ? "Preferences Locked" : "Not Opened Yet";
+      profileBtn.textContent = showLockedBanner ? "Preferences Locked" : "Not Opened Yet";
       profileBtn.disabled = true;
       profileBtn.removeAttribute("onclick");
       profileBtn.style.opacity = "0.6";

@@ -51,11 +51,6 @@ public class StudentController {
         }
         stud.setEmail(principal.getAttribute("email"));
 
-        if (allotmentService.isLocked() || arepo.existsByStudentId(stud.getStudentId())) {
-            return ResponseEntity.badRequest().body(Map.of(
-                    "message", "Your preferences are locked because room allotment has already been finalized."));
-        }
-
         if (!settingsService.arePreferencesOpen()) {
             return ResponseEntity.badRequest().body(Map.of(
                     "message", "Preference selection has not been opened yet by the warden. Please check back later."));

@@ -167,11 +167,14 @@ class AllotmentServiceTest {
     @Test
     void lockAndAllotFillsPreferencesAndReportsUnallotted() {
         seedRoomsAndStudents();
+        settingsService.setPreferencesOpen(true); // warden opened the window for submissions
         Map<String, Object> results = allotmentService.lockAndAllot();
 
         assertEquals(8, ((Number) results.get("allottedCount")).intValue());
         assertEquals(2, ((Number) results.get("unallottedCount")).intValue());
         assertTrue((Boolean) results.get("locked"));
+        assertFalse(settingsService.arePreferencesOpen(),
+                "finalizing the allotment must close the preference window");
         assertEquals(3, grepo.count(), "two 3-Sharing rooms + one 2-Sharing room");
         assertEquals(8, arepo.count(), "one allotment row per allotted student");
 
@@ -236,6 +239,24 @@ class AllotmentServiceTest {
         Map<String, Object> results = allotmentService.lockAndAllot();
         assertEquals(8, ((Number) results.get("allottedCount")).intValue());
         assertTrue((Boolean) results.get("locked"));
+    }
+
+    @Test
+    void flushAllDataWipesEverythingAndClosesWindow() {
+        seedRoomsAndStudents();
+        settingsService.setPreferencesOpen(true);
+        allotmentService.lockAndAllot();
+        assertEquals(3, grepo.count());
+        assertEquals(8, arepo.count());
+
+        allotmentService.flushAllData();
+
+        assertEquals(0, grepo.count());
+        assertEquals(0, arepo.count());
+        assertEquals(0, srepo.count());
+        assertEquals(0, rrepo.count());
+        assertFalse(settingsService.arePreferencesOpen(), "flush must reset the window to closed");
+        assertFalse(allotmentService.isLocked(), "flush must leave the system unlocked");
     }
 
     @Test

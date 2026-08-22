@@ -61,7 +61,8 @@ Manual hostel-room allocation does not naturally account for lifestyle compatibi
 - Rooms allotted shown room-type-wise.
 - Student preference search and inspection with created/updated timestamps.
 - **Lock & Allot**: a single action that finalizes allotment for everyone and locks preferences.
-- Reset Allotment: clears groups/allotments and unlocks preferences for a re-run.
+- Reset Allotment: clears groups/allotments for a re-run; the preference window stays closed until the warden manually reopens it.
+- **Flush All Data**: full wipe back to the fresh state — deletes all students (and their preferences), room types, groups and allotments, and closes the preference window; guarded by a warning dialog.
 - Client-side PDF export using jsPDF and AutoTable containing: rooms allotted room-type-wise, the flat allotted-students list, and the unallotted students list.
 
 ### Internal Flask service
@@ -201,12 +202,12 @@ Spring Boot owns identity, HTTP sessions, UI delivery, validation/orchestration,
 2. The student fills the preference form: name, student ID (digital ID), college, department, year, contact details, lifestyle preferences, location, preferred roommates (by digital ID), and **1st/2nd/3rd room-type preferences**.
 3. `allotment.js` sends `POST /saveStudents` (no client-side timestamp — the server sets `createdAt`/`updatedAt`).
 4. `StudentController` overwrites the email with the authenticated OAuth email.
-5. If the allotment is locked (any group exists) or the student already has an allotment, HTTP 400 is returned with the locked message; if the preference window is closed, HTTP 400 is returned with the not-opened message.
+5. Submissions are gated by the preference window only: if the window is closed, HTTP 400 is returned with the not-opened message. (Finalizing the allotment auto-closes the window, so a finalized allotment is effectively read-only until the warden reopens it.)
 6. Otherwise the student row is inserted/updated; `updatedAt` is refreshed on every edit, which is exactly what determines allotment priority.
 
 ### 6.3 Warden setup
 
-1. **Open the preference window** (Lock & Allot screen) so students can submit; close it once collection is done.
+1. **Open the preference window** (Lock & Allot screen) so students can submit; close it once collection is done (finalizing via **Lock & Allot** closes it automatically).
 2. Under **Room Types** the warden adds room types: name (e.g. `3-Sharing`), students per room (`capacity`), and **total rooms available** (`totalRooms`).
 3. The Lock & Allot screen shows a configuration summary (room type, students/room, total rooms, total capacity = `totalRooms × capacity`).
 4. The **Lock and Allot** button stays disabled until every room type has both students-per-room (`capacity`) and total rooms (`totalRooms`) entered.
@@ -243,7 +244,7 @@ Details:
 3. **Unallotted** — Students who fit into no list are reported as unallotted. No algorithm runs on them and no `allotment` row is created; they only appear in the results/PDF.
 4. **Two-phase matching per list** — Each non-empty room-type list is sorted by department (so same-department students are grouped together) and then sent to Flask (`POST /allot`, capacity = that type's students per room). Flask runs Pass 1 (fully mutual preferred-roommate groups) and Pass 2 (weighted compatibility graph + Louvain community detection, leftovers chunked).
 5. **Persistence** — Each matched group becomes one `room_groups` row (`room_id` = the room type) plus one `allotment` row per member. The number of groups per type never exceeds `totalRooms` because the list size is capped at `totalRooms × capacity`.
-6. **Locking** — Because groups now exist, every future preference edit is rejected; the student UI disables the form with a lock banner.
+6. **Locking** — Finalizing closes the preference window, so every future preference edit is rejected while it stays closed; the student UI disables the form and explains why (lock banner).
 
 ### 6.5 Student allotment lookup
 
@@ -465,7 +466,7 @@ Because group references are plain numeric columns with no JPA foreign keys:
 
 | Method | Path | Access | Purpose |
 |---|---|---|---|
-| `POST` | `/saveStudents` | Authenticated | Insert/update preference profile (rejected when locked) |
+| `POST` | `/saveStudents` | Authenticated | Insert/update preference profile (rejected while the preference window is closed) |
 | `GET` | `/api/student/profile` | Authenticated | Find profile by OAuth email |
 | `GET` | `/api/student/allotment` | Authenticated | Current student's room, roommates, and lock state |
 | `GET` | `/api/admin/students` | Authenticated | Return all student entities |
@@ -501,12 +502,6 @@ Request shape:
 ```
 
 The server ignores any request email and uses the OAuth principal email. `createdAt`/`updatedAt` are set server-side. Rejections return HTTP 400:
-
-```json
-{
-  "message": "Your preferences are locked because room allotment has already been finalized."
-}
-```
 
 ```json
 {
@@ -554,9 +549,10 @@ Grouped response shape:
 |---|---|---|---|
 | `GET` | `/api/admin/preferences-window` | Authenticated | Current window state `{ "preferencesOpen": bool }` |
 | `POST` | `/api/admin/preferences-window` | Authenticated | Body `{ "open": true/false }` — opens/closes the preference-selection window for all students |
-| `POST` | `/api/admin/lock-and-allot` | Authenticated | Run the full single-stretch allotment; returns results |
+| `POST` | `/api/admin/lock-and-allot` | Authenticated | Run the full single-stretch allotment; closes the preference window; returns results |
 | `GET` | `/api/admin/allotment-results` | Authenticated | Rooms allotted room-type-wise + unallotted students (includes `preferencesOpen`) |
-| `POST` | `/api/admin/reset-allotment` | Authenticated | Delete all groups/allotments and unlock preferences |
+| `POST` | `/api/admin/reset-allotment` | Authenticated | Delete all groups/allotments (preference window stays as the warden left it) |
+| `POST` | `/api/admin/flush-all-data` | Authenticated | Full wipe: delete all students, rooms, groups and allotments; preference window resets to closed |
 
 #### `POST /api/admin/lock-and-allot`
 
@@ -643,9 +639,9 @@ For production, use role authorities, route authorization, CSRF protection, rest
 
 - One Thymeleaf template (`index.html`) serves login and both dashboards; JavaScript switches sections based on `/api/user-info`.
 - Permanent **velvet dark theme**: a deep plum-navy palette with an indigo-violet accent (`color-scheme: dark`), so the whole app — including native select dropdowns and scrollbars — renders consistently dark.
-- Student form: three room-type preference selects (1st required, 2nd/3rd optional, must differ), free-text department with a datalist, and a lock banner that disables the whole form once allotment is finalized.
-- Admin screens: **Room Types** (management table with inline students-per-room + total rooms editing, per-row Configured/Needs-rooms status badges, and a header showing "X of Y configured", total capacity, and a Ready for Lock & Allot badge), **Track Preferences** (search + created/updated columns), **Lock & Allot** (configuration summary, disabled-until-configured button, results, reset), **Overview** (stats + rooms allotted room-type-wise + unallotted).
-- Destructive or final actions (Lock & Allot, Reset Allotment, remove room type) use an in-app confirmation dialog — Lock & Allot shows a live summary (students with preferences, total capacity, expected unallotted). All feedback uses toast notifications instead of native `alert`/`confirm`.
+- Student form: three room-type preference selects (1st required, 2nd/3rd optional, must differ), free-text department with a datalist, and a banner that disables the whole form while the preference window is closed (a lock banner explains the reason after finalization).
+- Admin screens: **Room Types** (management table with inline students-per-room + total rooms editing, per-row Configured/Needs-rooms status badges, and a header showing "X of Y configured", total capacity, and a Ready for Lock & Allot badge), **Track Preferences** (search + created/updated columns), **Lock & Allot** (configuration summary, disabled-until-configured button, results, reset, Flush All Data danger button), **Overview** (stats + rooms allotted room-type-wise + unallotted).
+- Destructive or final actions (Lock & Allot, Reset Allotment, Flush All Data, remove room type) use an in-app confirmation dialog — Lock & Allot shows a live summary (students with preferences, total capacity, expected unallotted). All feedback uses toast notifications instead of native `alert`/`confirm`.
 - PDF export (`downloadPDF`) renders every room-type results block plus the flat allotted-students table and the unallotted students table via jsPDF/AutoTable; PDF text is sanitized (emoji/arrows stripped) so jsPDF's built-in fonts never render mojibake.
 
 ## 12. Configuration
@@ -742,7 +738,8 @@ variables.
 The application ships with no test/seed data — all tables start empty. The
 warden adds room types under **Room Types**, and students register via Google
 login and submit preferences while the preference window is open. To reset to
-a clean slate, use **Reset Allotment** in the UI or truncate the tables in the
+a clean slate, use **Reset Allotment** (clears results only) or **Flush All
+Data** (deletes everything) in the UI, or truncate the tables in the
 database.
 
 ### 13.5 Basic health checks
@@ -786,7 +783,7 @@ at the dev/production database — the test suite deletes all rows in it.
 | Lock & Allot with missing/invalid `capacity` on any type | HTTP 400 with the room type named |
 | Lock & Allot with no students | HTTP 400 "No students have submitted their preferences yet." |
 | Lock & Allot run twice | HTTP 400 "Allotment has already been finalized..." |
-| Student edits preferences after Lock & Allot | HTTP 400 locked message; form disabled in UI |
+| Student edits preferences after Lock & Allot | HTTP 400 window-closed message (the window auto-closes on finalize); form disabled in UI |
 | Student submits while the preference window is closed | HTTP 400 "not opened yet" message; form disabled in UI |
 | Room mutation while locked | HTTP 400; warden must reset first |
 | Student has fewer than 3 preferences | Remaining preference slots are skipped |
