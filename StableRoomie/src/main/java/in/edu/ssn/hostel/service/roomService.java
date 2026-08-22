@@ -54,27 +54,4 @@ public class roomService {
             repo.delete(r);
         }
     }
-
-    @jakarta.annotation.PostConstruct
-    public void initDefaultRooms() {
-        if (repo.count() == 0) {
-            Rooms room1 = new Rooms();
-            room1.setRoomType("3-Sharing");
-            room1.setCapacity(3);
-            room1.setTotalRooms(20);
-            repo.save(room1);
-
-            Rooms room2 = new Rooms();
-            room2.setRoomType("2-Sharing");
-            room2.setCapacity(2);
-            room2.setTotalRooms(10);
-            repo.save(room2);
-
-            Rooms room3 = new Rooms();
-            room3.setRoomType("4-Sharing");
-            room3.setCapacity(4);
-            room3.setTotalRooms(5);
-            repo.save(room3);
-        }
-    }
 }

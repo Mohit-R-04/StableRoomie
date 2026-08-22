@@ -96,7 +96,6 @@ StableRoomie/
 ├── readme.md                         # This complete project guide
 ├── docker-compose.yml                # Java, Flask, Caddy (DB: Neon serverless)
 ├── Caddyfile                         # Reverse proxy to Java backend
-├── students_seed.sql                 # Optional 500-row manual seed script
 ├── AZURE_DEPLOYMENT.md               # Azure command guide
 ├── DEPLOYMENT_SUMMARY.md             # Recorded deployment summary
 ├── RUNNING.md                        # Older local-running notes
@@ -114,7 +113,7 @@ StableRoomie/
 │       │   │   ├── HostelAllotmentApplication.java
 │       │   │   ├── config/               # Spring Security
 │       │   │   ├── controller/           # MVC and REST entry points
-│       │   │   ├── service/              # Business logic (incl. AllotmentService, TestDataSeeder)
+│   │   │   ├── service/              # Business logic (incl. AllotmentService)
 │       │   │   ├── repo/                 # JPA repositories
 │       │   │   └── model/                # Entities
 │       │   └── resources/
@@ -295,7 +294,7 @@ Because Spring Boot sorts each list by department before calling Flask, same-dep
 - Hibernate manages schema creation/update with `ddl-auto=update`.
 - There is no Flyway or Liquibase migration history.
 - Development defaults to a file-backed H2 database; the Compose stack and the local `StableRoomie/.env` both connect to Neon serverless PostgreSQL (pooler endpoint).
-- `students_seed.sql` is optional manual seed data (500 rows) and is not auto-executed.
+- No seed data is shipped or auto-executed — the application starts with empty tables.
 - `import.sql` contains no executable seed data.
 
 ### 8.2 Entity relationship diagram
@@ -418,22 +417,9 @@ The physical table is named `room_groups` because `groups` is a reserved SQL key
 
 ### 8.4 Default data
 
-On an empty database, `roomService.initDefaultRooms()` creates:
-
-```text
-Rooms: 3-Sharing (capacity 3, totalRooms 20), 2-Sharing (capacity 2, totalRooms 10),
-       4-Sharing (capacity 4, totalRooms 5)
-```
-
-On an empty student table, `TestDataSeeder` inserts 200 test students
-(IDs 1001-1200, emails `test1001@ssn.edu.in` … `test1200@ssn.edu.in`) with
-varied departments, lifestyle profiles, up to three room-type preferences,
-reciprocal roommate-preference pairs, and staggered `created_at`/`updated_at`
-timestamps so the preference-time prioritization is observable. Set
-`SEED_TEST_STUDENTS=false` (or `app.seed-test-students=false`) to disable;
-existing data is never touched.
-
-There is no default category table anymore — department is a free-text field on the student form.
+There is no default/seed data. All tables start empty: the warden adds room
+types under **Room Types**, and students register themselves via Google login.
+Department is a free-text field on the student form (no category table).
 
 ### 8.5 Removed tables
 
@@ -671,7 +657,6 @@ For production, use role authorities, route authorization, CSRF protection, rest
 | `DB_DRIVER` | No | `org.h2.Driver` | JDBC driver |
 | `DB_DIALECT` | No | `org.hibernate.dialect.H2Dialect` | Hibernate dialect |
 | `FLASK_API_URL` | No | `http://127.0.0.1:5000` | Flask base URL |
-| `SEED_TEST_STUDENTS` | No | `true` | Seed 200 test students when the student table is empty |
 | `ADMIN_EMAIL` | No | `mohit2310893@ssn.edu.in` | The single account that gets the ADMIN dashboard |
 
 The shipped `StableRoomie/.env` also duplicates the database settings as `SPRING_DATASOURCE_URL`, `SPRING_DATASOURCE_USERNAME`, and `SPRING_DATASOURCE_PASSWORD`. Spring Boot's relaxed binding accepts either form (explicit environment variables override `application.properties`), and both are kept identical to avoid ambiguity.
@@ -723,7 +708,7 @@ Open `http://localhost:8080`.
 
 **Local:** create the `stableromie` database, then start Java with `DB_URL`, `DB_USERNAME`, `DB_PASSWORD`, `DB_DRIVER=org.postgresql.Driver`, and `DB_DIALECT=org.hibernate.dialect.PostgreSQLDialect` set, plus the OAuth and Flask variables.
 
-**Neon (serverless):** point `DB_URL` (and `SPRING_DATASOURCE_URL`) at the Neon **pooler** JDBC URL with `?sslmode=require&channelBinding=require` and the `neondb_owner` credentials. `ddl-auto=update` creates the schema on first boot, and the auto-seeders populate the 200 test students plus the default room types (see §8.4/§13.4). Both `.env` files are gitignored, so DB credentials stay out of version control.
+**Neon (serverless):** point `DB_URL` (and `SPRING_DATASOURCE_URL`) at the Neon **pooler** JDBC URL with `?sslmode=require&channelBinding=require` and the `neondb_owner` credentials. `ddl-auto=update` creates the schema on first boot and tables start empty (no seed data, see §8.4). Both `.env` files are gitignored, so DB credentials stay out of version control.
 
 ```bash
 export DB_URL="jdbc:postgresql://<your-pooler-host>/neondb?sslmode=require&channelBinding=require"
@@ -733,18 +718,17 @@ export DB_DRIVER="org.postgresql.Driver"
 export DB_DIALECT="org.hibernate.dialect.PostgreSQLDialect"
 ```
 
-On a fresh Neon database the preference-selection window defaults **closed** (open it under Lock & Allot → 📢 Preference Selection Window before students can submit) and the default room types (3-Sharing ×20, 2-Sharing ×10, 4-Sharing ×5) seed lazily the first time the Room Types screen is opened.
+On a fresh Neon database the preference-selection window defaults **closed** (open it under Lock & Allot → 📢 Preference Selection Window before students can submit).
 
 The Docker Compose stack (`docker compose up --build`) has **no local PostgreSQL container** — `java-backend` interpolates `DB_URL`/`DB_USERNAME`/`DB_PASSWORD`/`DB_DRIVER`/`DB_DIALECT` and the `GOOGLE_*` values from the root `.env` and connects straight to Neon.
 
-### 13.4 Test data
+### 13.4 No seed data
 
-- **Automatic seeder:** on first boot with an empty `student` table, `TestDataSeeder` inserts 200 test students (IDs 1001-1200, see §8.4). Disable with `SEED_TEST_STUDENTS=false`.
-- **Manual SQL:** `students_seed.sql` contains 500 student inserts (IDs 1000-1499) with `room_type_pref_1/2/3` and staggered `created_at`/`updated_at` timestamps. Apply it manually only after Hibernate has created the `student` table and only in a disposable development database:
-
-```bash
-psql -d stableromie -f students_seed.sql
-```
+The application ships with no test/seed data — all tables start empty. The
+warden adds room types under **Room Types**, and students register via Google
+login and submit preferences while the preference window is open. To reset to
+a clean slate, use **Reset Allotment** in the UI or truncate the tables in the
+database.
 
 ### 13.5 Basic health checks
 
@@ -843,7 +827,6 @@ mvn test
 | Student APIs | [`StudentController.java`](StableRoomie/src/main/java/in/edu/ssn/hostel/controller/StudentController.java) |
 | Lock & Allot / results / reset | [`AdminAllotmentController.java`](StableRoomie/src/main/java/in/edu/ssn/hostel/controller/AdminAllotmentController.java), [`AllotmentService.java`](StableRoomie/src/main/java/in/edu/ssn/hostel/service/AllotmentService.java) |
 | Room management | [`roomsController.java`](StableRoomie/src/main/java/in/edu/ssn/hostel/controller/roomsController.java), [`roomService.java`](StableRoomie/src/main/java/in/edu/ssn/hostel/service/roomService.java) |
-| Test data seeding | [`TestDataSeeder.java`](StableRoomie/src/main/java/in/edu/ssn/hostel/service/TestDataSeeder.java) |
 | Preference window / settings | [`SettingsService.java`](StableRoomie/src/main/java/in/edu/ssn/hostel/service/SettingsService.java), [`Settings.java`](StableRoomie/src/main/java/in/edu/ssn/hostel/model/Settings.java) |
 | Entities | [`model/`](StableRoomie/src/main/java/in/edu/ssn/hostel/model/) |
 | Flask two-phase endpoint | [`flask-api/app.py`](flask-api/app.py) |
@@ -852,7 +835,6 @@ mvn test
 | Runtime configuration | [`application.properties`](StableRoomie/src/main/resources/application.properties), [`docker-compose.yml`](docker-compose.yml) |
 | Container builds | [`StableRoomie/Dockerfile`](StableRoomie/Dockerfile), [`flask-api/Dockerfile`](flask-api/Dockerfile) |
 | Deployment automation | [`deploy/deploy-azure.sh`](deploy/deploy-azure.sh) |
-| Optional seed data | [`students_seed.sql`](students_seed.sql) |
 
 ---
 
